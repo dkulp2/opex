@@ -1,0 +1,43 @@
+town premises miles poles
+Alford  357	26	785
+Egremont	1034	56	1837
+Hancock	755	26	758
+Lanesborough	1848	52	1423
+"Mount Washington"	180	23	630
+"New Ashford"	114	10	228
+"West Stockbridge"	949	48	1541
+"New Braintree"	400	47	1510
+"New Salem"	472	41	1289
+Petersham	713	48	1561
+Royalston	673	67	2131
+Shutesbury	881	43	1481
+Warwick	399	49	1570
+Wendell	471	40	1150
+Ashfield	934	72	1743
+Charlemont	671	55	1783
+Colrain	908	72	1802
+Heath	403	51	1563
+Leyden	350	34	817
+Monroe	88	10	220
+Rowe	249	31	942
+Chesterfield	618	48	1320
+Cummington	533	50	1275
+Goshen	636	40	1324
+Hawley	218	29	833
+Hinsdale	1259	41	1202
+Peru	433	34	971
+Plainfield	361	39	979
+Savoy	388	32	735
+Windsor	510	53	1310
+Worthington	698	59	1623
+Becket	1862	107	3560
+Blandford	612	50	1385
+Middlefield	287	31	781
+Monterey	994	63	2008
+Montgomery	372	26	722
+"New Marlborough"	1116	97	2818
+Otis	1751	81	2421
+Sandisfield	766	71	1762
+Tolland	566	26	613
+Tyringham	338	24	750
+Washington	269	24	562
