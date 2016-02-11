@@ -143,9 +143,8 @@ shinyServer(function(input, output) {
     z <- filter(town.derived(), method=='regional')
     z$min.service <- input$service.fee
     z2 <- melt(z, id="town", measure.vars=c('opex.per.sub.per.mo','min.service','tax/sub/mo'), variable_name='cost')
-    save(z, z2, file='z')
     z2$value <- as.numeric(z2$value)
-    ggplot(z2, aes(x=town,y=value,fill=cost)) + geom_bar(stat='identity',position = "stack") + ggtitle("Monthly Subscriber Costs") + ylab("$/month") + theme(axis.text.x  = element_text(angle=45))
+    ggplot(z2, aes(x=town,y=value,fill=cost)) + geom_bar(stat='identity',position = "stack") + ggtitle("Monthly Subscriber Costs") + ylab("$/month") + theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1))
     
   })
     
