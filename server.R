@@ -4,13 +4,26 @@ library(dplyr)
 library(ggplot2)
 library(reshape)
 
+# There are two depreciation strategies:
+# Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
+# MLP/MBI: use MBI's not to exceed number as the cost of the total plant and take 3%.
+# In the latter case, I don't separate plant and electronics
+depreciation <- function(miles, units, cost, input) {
+  if (input$depreciation_method == 'mbi') {
+    return(cost*(1-input$make.ready.pct/100)*0.03)  # treat fiber and electonics differently?
+  } else {
+    return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units)
+  }
+}
+
 # The plant.opex are fixed costs.
 # I assume these costs are linear in the counts (miles, poles, etc.)
 # That is, no economy of scale as increase size
-plant.opex <- function(miles, poles, units, subscribers, input) {
-  (input$fiber.plant.depreciation+input$insurance)*miles +
+plant.opex <- function(miles, poles, units, subscribers, cost, input) {
+  input$insurance*miles +
     (input$bond.fees+input$pole.rental)*poles +
-    (input$electronics.depreciation+input$routine.mtnce)*units
+    input$routine.mtnce*units +
+    depreciation(miles, units, cost, input)
 }
 
 # The netop.opex is the cost of the Network Operator subcontract.
@@ -34,6 +47,19 @@ contingency <- function(tot.opex, input) {
   tot.opex * input$return.pct
 }
 
+
+# calculate annual payments and then total
+# http://mathforum.org/library/drmath/view/67057.html
+debt.svc <- function(principal, years, interest.rate) {
+  return( years * (principal*interest.rate) / (1-(1+interest.rate)^(-years)) )
+}
+
+
+# returns a JavaScript function for formatting a numeric field as money
+JSmoney <- function() {
+  DT::JS('function(data, type, row, meta) { return type=="display"?"$" + data.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ","):data }')
+}
+
 # units miles poles         town   capex avg_sf_home total_assessed
 # 1   357    26   785       Alford  830000      714950      271040108
 # 2   934    72  1743     Ashfield 2300000      237407      224035671
@@ -47,17 +73,6 @@ rownames(town.data) <- town.data$town
 
 
 town.data <- arrange(town.data, desc(town))
-
-# return principal compounded with interest over years
-compound <- function(principal, years, interest.rate) {
-  for (i in 2:years) { principal <- principal * (1+interest.rate) }
-  return(principal)
-}
-
-# returns a JavaScript function for formatting a numeric field as money
-JSmoney <- function() {
-  DT::JS('function(data, type, row, meta) { return type=="display"?"$" + data.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ","):data }')
-}
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
@@ -83,8 +98,10 @@ shinyServer(function(input, output, session) {
   
   town.subset <- reactive({
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
-    ss$debt <- as.integer(compound(ss$capex, input$years, input$interest.rate/100))
-    ss$'tax/sub/mo' <- round(ss$debt / input$years / ss$total_assessed * ss$avg_sf_home / 12, 2)
+    ss <- mutate(ss,
+                 debt=as.integer(debt.svc(capex, input$years, input$interest.rate/100)),
+                 proptax.per.mo=round((debt * (1-input$debt.responsibility/100)) / input$years / total_assessed * avg_sf_home / 12, 2),
+                 capex.fee.per.mo=round(debt*input$debt.responsibility/100 / input$years / (units*input$take.rate/100) / 12,2))
     return(ss)
   })
 
@@ -98,18 +115,18 @@ shinyServer(function(input, output, session) {
     per.town.data <-
       mutate(ts,
              n_towns=1,
-             plant.opex=plant.opex(miles, poles, units, units*take.rate, input),
-             netop.opex=netop.opex(1,units*take.rate, input),
+             plant.opex=plant.opex(miles, poles, units, units*input$take.rate/100, total_cost, input),
+             netop.opex=netop.opex(1,units*input$take.rate/100, input),
              admin.opex=admin.opex(1, input),
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
              total.opex=plant.opex+netop.opex+admin.opex+contingency,
-             revenue=input$mlp.fee*units*take.rate*12,
+             revenue=input$mlp.fee*units*input$take.rate/100*12,
              cash.flow=revenue-total.opex,
-             opex.per.sub.per.mo=round(total.opex/(units*take.rate)/12,2),
+             opex.per.sub.per.mo=round(total.opex/(units*input$take.rate/100)/12,2),
              net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
     
     # For computing cumulative results and plotting purposes, reorder town names by cash.flow
-    per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$cash.flow)])
+    per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$net.per.sub.per.mo)])
     per.town.data <- arrange(per.town.data, desc(town))
     
     # Now generate cumulative values in order of most affordable first
@@ -118,19 +135,26 @@ shinyServer(function(input, output, session) {
              miles=cumsum(miles), 
              poles=cumsum(poles), 
              units=cumsum(units),
+             total_cost=cumsum(total_cost),
              n_towns=1:nrow(per.town.data),
-             plant.opex=plant.opex(miles, poles, units, units*take.rate, input),
-             netop.opex=netop.opex(n_towns, units*take.rate, input),
+             plant.opex=plant.opex(miles, poles, units, units*input$take.rate/100, total_cost, input),
+             netop.opex=netop.opex(n_towns, units*input$take.rate/100, input),
              admin.opex=admin.opex(n_towns, input),
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
              total.opex=plant.opex+netop.opex+admin.opex+contingency,
-             revenue=input$mlp.fee*units*take.rate*12,
+             revenue=input$mlp.fee*units*input$take.rate/100*12,
              cash.flow=revenue-total.opex,
-             opex.per.sub.per.mo=round(total.opex/(units*take.rate)/12,2),
+             opex.per.sub.per.mo=round(total.opex/(units*input$take.rate/100)/12,2),
              net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
     
     # combine the data.frames
     costs <- cbind(rbind(per.town.data, cum.town.data), method=factor(rep(c('standalone','regional') , each=nrow(per.town.data))))
+
+    # INP <- list()
+    # for (i in names(input)) { INP[[i]] <- input[[i]] }
+    # save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
+    
+    return(costs)
   })  
   
   # See http://rstudio.github.io/DT/options.html for DT::renderDataTable options
@@ -140,15 +164,14 @@ shinyServer(function(input, output, session) {
     { 
       x <- arrange(town.subset()[,c('town','units','miles','poles',
                                     'avg_sf_home','total_assessed',
-                                    'capex','debt','tax/sub/mo')]
+                                    'capex','debt','proptax.per.mo','capex.fee.per.mo')]
                    ,town)
       return(x)
     }, 
     rownames=FALSE, 
     colnames=c('Town','Units','Miles','Poles','Avg Single Family',
-               'Total Assessed', 'Capex', 'Capex w/ Interst', 'Tax/Sub/Month'),
-    extensions='TableTools',
-    options=list(paging=FALSE, columnDefs=list(list(targets=4:8,render=JSmoney())))
+               'Total Assessed', 'Capex', 'Capex w/ Interest', 'Tax / Home / Month','Capex Fee / Sub / Month'),
+    options=list(dom='t',paging=FALSE, columnDefs=list(list(targets=4:8,render=JSmoney())))
   )
   
   output$town.costs <- DT::renderDataTable(
@@ -157,15 +180,14 @@ shinyServer(function(input, output, session) {
       x$town <- as.character(x$town)
       x <- arrange(x,town)
       z <- filter(x, method=='standalone')[,c('town','plant.opex','netop.opex','admin.opex',
-                                              'contingency','total.opex','revenue','opex.per.sub.per.mo',
-                                              'net.per.sub.per.mo')]
+                                              'contingency','total.opex','opex.per.sub.per.mo')]
       return(z)
     }, 
     rownames=FALSE,
     colnames=c('Town','Plant Opex','Network Operator','Admin Opex',
-               'Contingency','Total Opex','Revenue',
-               'Opex/Sub/Month','Net/Sub/Month'),
-    options=list(paging=FALSE,columnDefs=list(list(targets=1:8, render=JSmoney())))
+               'Contingency','Total Opex',
+               'Opex/Sub/Month'),
+    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:6, render=JSmoney())))
   )
   
   output$regional.costs <- DT::renderDataTable(
@@ -173,40 +195,50 @@ shinyServer(function(input, output, session) {
       x <- arrange(town.derived(),desc(town))
       x$town <- as.character(x$town)
       z <- filter(x, method=='regional')[,c('town','plant.opex','netop.opex','admin.opex',
-                                            'contingency','total.opex','revenue','opex.per.sub.per.mo',
-                                            'net.per.sub.per.mo')]
+                                            'contingency','total.opex','opex.per.sub.per.mo')]
       return(z)
     }, 
     rownames=FALSE,
     colnames=c('Town','Plant Opex','Network Operator','Admin Opex',
-               'Contingency','Total Opex','Revenue',
-               'Opex/Sub/Month','Net/Sub/Month'),
-    options=list(paging=FALSE,columnDefs=list(list(targets=1:8, render=JSmoney())))
+               'Contingency','Total Opex','Opex/Sub/Month'),
+    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:6, render=JSmoney())))
   )
   
-  output$cash.flow <- renderPlot({
-    withProgress(message="Rendering Plots", detail="Cash Flow", value=NULL, {
-      ggplot(town.derived(), aes(x=town,y=cash.flow/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per Town") + ylab("$ / town")
-    })
+  output$cash.flow.tbl <- renderTable({
+    z <- town.derived()[,c('town','method','total.opex','revenue','cash.flow','opex.per.sub.per.mo','net.per.sub.per.mo')]
+    z2 <- cbind(z[z$method=='regional',-2],z[z$method=='standalone',c(-1,-2)])
+    colnames(z2) <- c('name',paste(colnames(z2)[2:6],rep(c('reg','stnd'),each=5),sep='.'))
+    return(z2)
+  })
+
+    output$cash.flow <- renderPlot({
+  #    ggplot(town.derived(), aes(x=town,y=cash.flow/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per Town") + ylab("$ / town")
+    ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per User") + ylab("$ / town")
   })
   
   output$reqd.mlp.fee <- renderPlot({
-    withProgress(message="Rendering Plots", detail="Required MLP Fee", value=NULL, {
-      ggplot(town.derived(), aes(x=town,y=opex.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position = "dodge") + coord_flip() + ggtitle("OpEx Per Subscriber") + ylab("$/month") 
-    })
+    z<-town.derived()
+    ggplot(z, aes(x=town,y=opex.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position = "dodge") + coord_flip() + ggtitle("Required Fee Per Subscriber to Cover Opex") + ylab("$/month") 
   })
   
   output$subscriber.fees <- renderPlot({
-    withProgress(message="Rendering Plots", detail="Subscriber Fees", value=NULL, {
       # stacked plot of debt, mlp fee, service fees
       z <- filter(town.derived(), method=='regional')
-      z$min.service <- input$service.fee
-      z2 <- melt(z, id="town", measure.vars=c('opex.per.sub.per.mo','min.service','tax/sub/mo'), variable_name='cost')
+      z$min.service <- as.numeric(input$service.fee)
+      mean.cost <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$units)
+      cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
+      z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
       z2$value <- as.numeric(z2$value)
       z2$town <- as.character(z2$town)
-      ggplot(z2, aes(x=town,y=value,fill=cost)) + geom_bar(stat='identity',position = "stack") + ggtitle("Monthly Subscriber Costs (Regional)") + ylab("$/month") + theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1))
-    })
-    
+      z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
+      z2 <- arrange(z2, cost)
+      ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + geom_bar(stat='identity',position = "stack") + 
+        ggtitle("Monthly Subscriber Costs (Regional)") + ylab("$/month") + 
+        theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
+        geom_hline(aes(yintercept=mean.cost))+geom_text(aes(0,mean.cost,label = sprintf("$%.0f",mean.cost), vjust = -1, hjust=-1)) +
+        scale_fill_discrete(name  ="Costs",
+                             breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
+                             labels=c("CapEx Fee","MLP Fee","Internet Service"))
   })
-    
+
 })
