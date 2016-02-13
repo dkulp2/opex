@@ -41,7 +41,9 @@ shinyUI(fluidPage(
                                             multiple = TRUE
                              )
                            ),
-                           selectInput("service.fee", "Minimum Service Fee", c("Crocker 1000Mb/s at $25/mo"=25), selected=25)
+                           selectInput("service.fee", "Minimum Service Fee", c("Crocker 1000Mb/s at $25/mo"=25), selected=25),
+                           sliderInput("seasonal.pct", "Percent Seasonal Residents", 0, 100, 10, step=5, round=TRUE),
+                           sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE)
                   ),
                   tabPanel("Opex Parameters",
                            numericInput("return.pct", "Contingency (% of opex)", .05),            # percent of opex (contingency fund)
@@ -101,6 +103,7 @@ shinyUI(fluidPage(
                                          step = 1,
                                          pre = "$",
                                          value = 45),
+                             p('Break-even MLP Fee: $', textOutput('opt.mlp.fee',inline=TRUE)),
                              plotOutput("net.income"))
                   ),
                   tabPanel("Town Stats", DT::dataTableOutput("basic.town.data")),
