@@ -213,7 +213,7 @@ shinyServer(function(input, output, session) {
 
     output$cash.flow <- renderPlot({
   #    ggplot(town.derived(), aes(x=town,y=cash.flow/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per Town") + ylab("$ / town")
-    ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per User") + ylab("$ / town")
+    ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per User") + ylab("$ / subscriber / month")
   })
   
   output$reqd.mlp.fee <- renderPlot({
