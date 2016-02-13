@@ -41,7 +41,7 @@ shinyUI(fluidPage(
                                             multiple = TRUE
                              )
                            ),
-                           selectInput("service.fee", "Minimum Service Fee", c("WiredWest 25Mb/s at $49/mo"=49, "Crocker 1000Mb/s at $25/mo"=25), selected=25)
+                           selectInput("service.fee", "Minimum Service Fee", c("Crocker 1000Mb/s at $25/mo"=25), selected=25)
                   ),
                   tabPanel("Opex Parameters",
                            numericInput("return.pct", "Contingency (% of opex)", .05),            # percent of opex (contingency fund)
