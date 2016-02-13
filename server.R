@@ -128,6 +128,7 @@ shinyServer(function(input, output, session) {
     # For computing cumulative results and plotting purposes, reorder town names by cash.flow
     per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$net.per.sub.per.mo)])
     per.town.data <- arrange(per.town.data, desc(town))
+    per.town.data$cum.total.opex <- cumsum(per.town.data$total.opex)
     
     # Now generate cumulative values in order of most affordable first
     cum.town.data <-
@@ -146,13 +147,24 @@ shinyServer(function(input, output, session) {
              cash.flow=revenue-total.opex,
              opex.per.sub.per.mo=round(total.opex/(units*input$take.rate/100)/12,2),
              net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
+
+    # for debug purposes, cum.total.opex is the addition of the standalone cost of town i to the cumulative cost.
+    # By comparison, cum.town.data$total.opex is the cost with economies of scale, if any. Comparing these
+    # two values helps debug whether such economies are properly computed.
+    cum.town.data$cum.total.opex <- cum.town.data$total.opex
+    for (i in 2:nrow(cum.town.data)) {
+      cum.town.data$cum.total.opex[i] <- cum.town.data$total.opex[i-1] + per.town.data$total.opex[i]
+    }
     
     # combine the data.frames
     costs <- cbind(rbind(per.town.data, cum.town.data), method=factor(rep(c('standalone','regional') , each=nrow(per.town.data))))
 
-    # INP <- list()
-    # for (i in names(input)) { INP[[i]] <- input[[i]] }
-    # save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
+    # for debug purposes, keep a copy of all the core computed data and save a copy of input as a list instead of a reactive object.
+    if (!file.exists("z.Rdata")) {
+      INP <- list()
+      for (i in names(input)) { INP[[i]] <- input[[i]] }
+      save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
+    }
     
     return(costs)
   })  
