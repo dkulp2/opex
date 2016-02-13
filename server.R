@@ -107,7 +107,7 @@ shinyServer(function(input, output, session) {
 
   
   town.derived <- reactive({
-    # Compute costs, revenue, cash flow per town
+    # Compute costs, revenue, net income per town
     
     ts <- town.subset()
     take.rate <- input$take.rate/100
@@ -121,11 +121,11 @@ shinyServer(function(input, output, session) {
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
              total.opex=plant.opex+netop.opex+admin.opex+contingency,
              revenue=input$mlp.fee*units*input$take.rate/100*12,
-             cash.flow=revenue-total.opex,
+             net.income=revenue-total.opex,
              opex.per.sub.per.mo=round(total.opex/(units*input$take.rate/100)/12,2),
              net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
     
-    # For computing cumulative results and plotting purposes, reorder town names by cash.flow
+    # For computing cumulative results and plotting purposes, reorder town names by net income
     per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$net.per.sub.per.mo)])
     per.town.data <- arrange(per.town.data, desc(town))
     per.town.data$cum.total.opex <- cumsum(per.town.data$total.opex)
@@ -144,7 +144,7 @@ shinyServer(function(input, output, session) {
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
              total.opex=plant.opex+netop.opex+admin.opex+contingency,
              revenue=input$mlp.fee*units*input$take.rate/100*12,
-             cash.flow=revenue-total.opex,
+             net.income=revenue-total.opex,
              opex.per.sub.per.mo=round(total.opex/(units*input$take.rate/100)/12,2),
              net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
 
@@ -216,16 +216,16 @@ shinyServer(function(input, output, session) {
     options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:6, render=JSmoney())))
   )
   
-  output$cash.flow.tbl <- renderTable({
-    z <- town.derived()[,c('town','method','total.opex','revenue','cash.flow','opex.per.sub.per.mo','net.per.sub.per.mo')]
+  output$net.income.tbl <- renderTable({
+    z <- town.derived()[,c('town','method','total.opex','revenue','net.income','opex.per.sub.per.mo','net.per.sub.per.mo')]
     z2 <- cbind(z[z$method=='regional',-2],z[z$method=='standalone',c(-1,-2)])
     colnames(z2) <- c('name',paste(colnames(z2)[2:6],rep(c('reg','stnd'),each=5),sep='.'))
     return(z2)
   })
 
-    output$cash.flow <- renderPlot({
-  #    ggplot(town.derived(), aes(x=town,y=cash.flow/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per Town") + ylab("$ / town")
-    ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Cash Flow Per User") + ylab("$ / subscriber / month")
+    output$net.income <- renderPlot({
+  #    ggplot(town.derived(), aes(x=town,y=net.income/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per Town") + ylab("$ / town")
+    ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per User") + ylab("$ / subscriber / month")
   })
   
   output$reqd.mlp.fee <- renderPlot({

@@ -91,7 +91,7 @@ shinyUI(fluidPage(
                            plotOutput('subscriber.fees'),
                            plotOutput('reqd.mlp.fee')
                   ),
-                  tabPanel("Cash Flow",
+                  tabPanel("Net Income",
                            conditionalPanel(
                              condition = "input.townnames.length > 0",
                              sliderInput("mlp.fee",
@@ -101,7 +101,7 @@ shinyUI(fluidPage(
                                          step = 1,
                                          pre = "$",
                                          value = 45),
-                             plotOutput("cash.flow"))
+                             plotOutput("net.income"))
                   ),
                   tabPanel("Town Stats", DT::dataTableOutput("basic.town.data")),
                   tabPanel("Standalone Opex", DT::dataTableOutput("town.costs")),
