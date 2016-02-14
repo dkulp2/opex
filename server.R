@@ -22,7 +22,7 @@ depreciation <- function(miles, units, cost, input) {
 plant.opex <- function(miles, poles, units, subscribers, cost, input) {
   input$insurance*miles +
     (input$bond.fees+input$pole.rental)*poles +
-    input$routine.mtnce*units +
+    input$routine.mtnce*units*input$install.percent/100 +
     depreciation(miles, units, cost, input)
 }
 
@@ -256,7 +256,7 @@ shinyServer(function(input, output, session) {
       # stacked plot of debt, mlp fee, service fees
       z <- filter(town.derived(), method=='regional')
       z$min.service <- as.numeric(input$service.fee)
-      mean.cost <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$units)
+      mean.cost <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
       cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
       z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
       z2$value <- as.numeric(z2$value)

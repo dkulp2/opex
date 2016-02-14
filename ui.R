@@ -64,14 +64,15 @@ shinyUI(fluidPage(
                            h3('Network Operator'),
                            numericInput("network.operator.base", "Base (per town) - NEEDS WORK", 16800),   # per town(!)
                            numericInput("network.operator", "Per subscriber - NEEDS WORK", 36),           # per subscriber
-                           h3('Per Mile'),
-                           numericInput("insurance", "Insurance", 442),                 # per mile
-                           h3('Per Pole'),
+                           h3('Insurance (per mile)'),
+                           numericInput("insurance", NULL, 442),                 # per mile
+                           h3('Utility Poles (per pole)'),
                            numericInput("bond.fees", "Bond fees", 3),                   # per pole
                            numericInput("pole.rental", "Pole Rental", 13),              # per pole
-                           h3('Per Unit'),
-                           numericInput("routine.mtnce", "Routine Maintenance", 39),              # per premise
-                           h3('Per Town'),
+                           h3('Routine Maintenance (per installed unit)'),
+                           numericInput("routine.mtnce", NULL, 39),     # per premise
+                           sliderInput("install.percent", "Percent of Premises With Drops", min=0, max=100, value=80, step=1, post='%'),
+                           h3('Administrative (per town) (needs work)'),
                            numericInput("purma.dues", "PURMA Dues", 1200),               # per town
                            numericInput("accountant", "Accountant", 3000),               # per town
                            numericInput("bookkeeping.etc", "Bookkeeping, etc.", 5000),          # per town
