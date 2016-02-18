@@ -8,9 +8,9 @@ library(reshape)
 # Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
 # MLP/MBI: use MBI's not to exceed number as the cost of the total plant and take 3%.
 # In the latter case, I don't separate plant and electronics
-depreciation <- function(miles, units, cost, input) {
+depreciation <- function(miles, units, cost, poles, input) {
   if (input$depreciation_method == 'mbi') {
-    return(cost*(1-input$make.ready.pct/100)*0.03)  # treat fiber and electonics differently?
+    return((cost - (poles * input$make.ready))*0.03)
   } else {
     return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units)
   }
@@ -20,10 +20,10 @@ depreciation <- function(miles, units, cost, input) {
 # I assume these costs are linear in the counts (miles, poles, etc.)
 # That is, no economy of scale as increase size
 plant.opex <- function(miles, poles, units, subscribers, cost, input) {
-  input$insurance*miles +
-    (input$bond.fees+input$pole.rental)*poles +
-    input$routine.mtnce*units*input$install.percent/100 +
-    depreciation(miles, units, cost, input)
+  as.integer(input$insurance*miles +
+               (input$bond.fees+input$pole.rental)*poles +
+               input$routine.mtnce*units*input$install.percent/100 +
+               depreciation(miles, units, cost, poles, input))
 }
 
 # The netop.opex is the cost of the Network Operator subcontract.
@@ -54,8 +54,10 @@ debt.svc <- function(principal, years, interest.rate) {
   return( years * (principal*interest.rate) / (1-(1+interest.rate)^(-years)) )
 }
 
-subscribers.fnc <- function(units, input) {
-  as.integer(((1-input$seasonal.pct/100)*units + input$seasonal.pct/100*units*input$seasonal.month/12) *input$take.rate/100)
+subscribers.fnc <- function(units, vacancy, seasonal, input) {
+  # as.integer(((1-input$seasonal.pct/100)*units + input$seasonal.pct/100*units*input$seasonal.month/12) *input$take.rate/100)
+  non.vacant <- (1-vacancy)*units
+  as.integer(((1-seasonal)*non.vacant + input$seasonal.month/12*seasonal*non.vacant)*input$take.rate/100)
 }
 
 # returns a JavaScript function for formatting a numeric field as money
@@ -73,6 +75,13 @@ JSmoney <- function() {
 # ...
 town.data <- read.table('towndata.txt', header=T)
 rownames(town.data) <- town.data$town
+
+# Jim uses 2010 census. Towns also provided MBI with count of non-primary *premises* (not units). Most towns reported zero.
+# For those towns that reported non-zero, we don't know whether each non-primary premise corresponds to
+# one or more units, so I assume that all of the non-primary premises are single-unit.
+# If there is a non-zero MBI number, then I use that to compute the seasonal percentage. Otherwise,
+# I use Jim's census data, i.e. (seasonal / (premises - vacant))
+town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
 
 
 town.data <- arrange(town.data, desc(town))
@@ -102,7 +111,7 @@ shinyServer(function(input, output, session) {
   town.subset <- reactive({
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
     ss <- mutate(ss,
-                 subscribers=subscribers.fnc(units,input),
+                 subscribers=subscribers.fnc(units,vacancy, seasonal, input),
                  debt=as.integer(debt.svc(capex, input$years, input$interest.rate/100)),
                  proptax.per.mo=round((debt * (1-input$debt.responsibility/100)) / input$years / total_assessed * avg_sf_home / 12, 2),
                  capex.fee.per.mo=round(debt*input$debt.responsibility/100 / input$years / subscribers / 12,2))
@@ -141,7 +150,7 @@ shinyServer(function(input, output, session) {
              units=cumsum(units),
              total_cost=cumsum(total_cost),
              n_towns=1:nrow(per.town.data),
-             subscribers=subscribers.fnc(units, input),
+             subscribers=cumsum(subscribers),
              plant.opex=plant.opex(miles, poles, units, subscribers, total_cost, input),
              netop.opex=netop.opex(n_towns, subscribers, input),
              admin.opex=admin.opex(n_towns, input),
@@ -180,23 +189,25 @@ shinyServer(function(input, output, session) {
     mlp.fee <- z[z$method=='regional','opex.per.sub.per.mo']
     mlp.fee[length(mlp.fee)]
   })
-  output$opt.mlp.fee <- renderText(as.integer(opt.mlp.fee()))
+  output$opt.mlp.fee <- renderText(round(opt.mlp.fee(),2))
   
   # See http://rstudio.github.io/DT/options.html for DT::renderDataTable options
   # there is supposed to be an export extension, but I cannot get it to work. http://rstudio.github.io/DT/extensions.html
   
   output$basic.town.data <- DT::renderDataTable(
     { 
-      x <- arrange(town.subset()[,c('town','units','subscribers','miles','poles',
+      x <- arrange(town.subset()[,c('town','units','vacancy','seasonal', 'subscribers','miles','poles',
                                     'avg_sf_home','total_assessed',
                                     'capex','debt','proptax.per.mo','capex.fee.per.mo')]
                    ,town)
+      x$seasonal <- sprintf("%d%%", as.integer(100*x$seasonal))
+      x$vacancy <- sprintf("%d%%",as.integer(100*x$vacancy))
       return(x)
     }, 
     rownames=FALSE, 
-    colnames=c('Town','Units','Subscribers','Miles','Poles','Avg Single Family',
-               'Total Assessed', 'Capex', 'Capex w/ Interest', 'Tax / Home / Month','Capex Fee / Sub / Month'),
-    options=list(dom='t',paging=FALSE, columnDefs=list(list(targets=4:8,render=JSmoney())))
+    colnames=c('Town','Units','Vacancy Rate','Seasonal Rate','Subscribers','Miles','Poles','Avg Single Family',
+               'Total Assessed', 'Capex', 'Capex w/ Interest', 'Tax / Home / Month','Debt Service / Sub / Month'),
+    options=list(dom='t',paging=FALSE, columnDefs=list(list(targets=2:3,class="dt-right"),list(targets=7:12,render=JSmoney())))
   )
   
   output$town.costs <- DT::renderDataTable(
@@ -236,8 +247,8 @@ shinyServer(function(input, output, session) {
     return(z2)
   })
 
-    output$net.income <- renderPlot({
-  #    ggplot(town.derived(), aes(x=town,y=net.income/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per Town") + ylab("$ / town")
+  output$net.income <- renderPlot({
+    #    ggplot(town.derived(), aes(x=town,y=net.income/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per Town") + ylab("$ / town")
     ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per User") + ylab("$ / subscriber / month")
   })
   
@@ -247,9 +258,10 @@ shinyServer(function(input, output, session) {
   # })
   
   output$reqd.mlp.fee <- renderPlot({
-    z<-town.derived()
+    z<-arrange(town.derived(), method)
     ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + coord_flip() +
-      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") 
+      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") + scale_color_discrete(breaks=c('standalone','regional'),
+                                                                                                             labels=c("Standalone","Regional"))
   })
 
   output$subscriber.fees <- renderPlot({
@@ -269,7 +281,11 @@ shinyServer(function(input, output, session) {
         geom_hline(aes(yintercept=mean.cost))+geom_text(aes(0,mean.cost,label = sprintf("$%.0f",mean.cost), vjust = -1, hjust=-1)) +
         scale_fill_discrete(name  ="Costs",
                              breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
-                             labels=c("CapEx Fee","MLP Fee","Internet Service"))
+                             labels=c("Debt Service Fee","MLP Fee","Internet Service"))
+  })
+  
+  output$cost.vs.take.rate <- renderPlot({
+    
   })
 
 })
