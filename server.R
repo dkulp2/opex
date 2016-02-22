@@ -2,6 +2,7 @@ library(shiny)
 
 library(dplyr)
 library(ggplot2)
+library(scales)
 library(reshape)
 
 # There are two depreciation strategies:
@@ -260,7 +261,7 @@ shinyServer(function(input, output, session) {
   output$reqd.mlp.fee <- renderPlot({
     z<-arrange(town.derived(), method)
     ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + coord_flip() +
-      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") + scale_color_discrete(breaks=c('standalone','regional'),
+      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") +  scale_y_continuous(breaks=pretty_breaks(10))  + scale_color_discrete(breaks=c('standalone','regional'),
                                                                                                              labels=c("Standalone","Regional"))
   })
 
@@ -278,7 +279,7 @@ shinyServer(function(input, output, session) {
       ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + geom_bar(stat='identity',position = "stack") + 
         ggtitle("Monthly Subscriber Costs (Regional)") + ylab("$/month") + 
         theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
-        geom_hline(aes(yintercept=mean.cost))+geom_text(aes(0,mean.cost,label = sprintf("$%.0f",mean.cost), vjust = -1, hjust=-1)) +
+        geom_hline(aes(yintercept=mean.cost))+geom_text(aes(0,mean.cost,label = sprintf("$%.0f",mean.cost), vjust = 1, hjust=-1), size=10) +
         scale_fill_discrete(name  ="Costs",
                              breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
                              labels=c("Debt Service Fee","MLP Fee","Internet Service"))
