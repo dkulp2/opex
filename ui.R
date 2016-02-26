@@ -63,6 +63,9 @@ shinyUI(fluidPage(
                            h3('Network Operator'),
                            numericInput("network.operator.base", "Base (per town) - NEEDS WORK", 16800),   # per town(!)
                            numericInput("network.operator", "Per subscriber - NEEDS WORK", 36),           # per subscriber
+                           h3("Bandwidth"),
+                           numericInput("units.per.gb","Subscribers per Gb/s Backhaul", 600),
+                           numericInput("backhaul.gb.price", "Backhaul Price Per Gb/s", 18000),
                            h3('Insurance (per mile)'),
                            numericInput("insurance", NULL, 442),                 # per mile
                            h3('Utility Poles (per pole)'),
@@ -71,6 +74,9 @@ shinyUI(fluidPage(
                            h3('Routine Maintenance (per installed unit)'),
                            numericInput("routine.mtnce", NULL, 39),     # per premise
                            sliderInput("install.percent", "Percent of Premises With Drops", min=0, max=100, value=80, step=1, post='%'),
+                           h3('Enclosures'),
+                           numericInput("electricity.per.hut", "Electricity Per Hut", 2500),
+                           numericInput("avg.huts.per.town", "Average Huts Per Town", 1),
                            h3('Administrative (per town) (needs work)'),
                            numericInput("purma.dues", "PURMA Dues", 1200),               # per town
                            numericInput("accountant", "Accountant", 3000),               # per town

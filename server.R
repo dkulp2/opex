@@ -31,7 +31,9 @@ plant.opex <- function(miles, poles, units, subscribers, cost, input) {
 # Crocker estimates a base cost per town and a cost per subscriber.
 # THIS NEEDS WORK
 netop.opex <- function(n_towns, subscribers, input) {
-  input$network.operator.base * n_towns + input$network.operator*subscribers
+  input$network.operator.base * n_towns + input$network.operator*subscribers + 
+    (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) +
+    input$electricity.per.hut * n_towns * input$avg.huts.per.town
 }
 
 # The admin.opex are the costs for bookkeeping, etc., which Crocker
