@@ -108,8 +108,12 @@ shinyServer(function(input, output, session) {
                              town.data[town.data$crocker_cluster == '2','town'])
     } else if (input$towngroups == 6) {
       updateSelectizeInput(session, "townnames", selected='')
+    } else if (input$towngroups == 7) {
+      updateSelectizeInput(session, "townnames", selected=c('Ashfield','Plainfield','Cummington','Goshen'))
+    } else if (input$towngroups == 8) {
+      updateSelectizeInput(session, "townnames", selected=c('Plainfield','Cummington','Goshen','Chesterfield','Worthington'))
     }
-  })
+})
   
   town.subset <- reactive({
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
@@ -177,13 +181,13 @@ shinyServer(function(input, output, session) {
     # combine the data.frames
     costs <- cbind(rbind(per.town.data, cum.town.data), method=factor(rep(c('standalone','regional') , each=nrow(per.town.data))))
 
-    # for debug purposes, keep a copy of all the core computed data and save a copy of input as a list instead of a reactive object.
-    if (!file.exists("z.Rdata")) {
-      INP <- list()
-      for (i in names(input)) { INP[[i]] <- input[[i]] }
-      save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
-    }
-    
+#     # for debug purposes, keep a copy of all the core computed data and save a copy of input as a list instead of a reactive object.
+#     if (!file.exists("z.Rdata")) {
+#       INP <- list()
+#       for (i in names(input)) { INP[[i]] <- input[[i]] }
+#       save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
+#     }
+#     
     return(costs)
   })  
   

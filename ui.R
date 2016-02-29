@@ -27,6 +27,8 @@ shinyUI(fluidPage(
                                        "All WiredWest" = 2,
                                        "Strong & Medium WiredWest" = 3,
                                        "West County" = 4,
+                                       "Midtowns" = 7,
+                                       "Northwest Hampshire" = 8,
                                        "Quabbin" = 5,
                                        "None" = 6,
                                        "Custom" = "custom"),
