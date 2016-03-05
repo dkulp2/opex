@@ -20,11 +20,12 @@ depreciation <- function(miles, units, cost, poles, input) {
 # The plant.opex are fixed costs.
 # I assume these costs are linear in the counts (miles, poles, etc.)
 # That is, no economy of scale as increase size
-plant.opex <- function(miles, poles, units, subscribers, cost, input) {
+plant.opex <- function(n_towns, miles, poles, units, subscribers, cost, input) {
   as.integer(input$insurance*miles +
                (input$bond.fees+input$pole.rental)*poles +
                input$routine.mtnce*units*input$install.percent/100 +
-               depreciation(miles, units, cost, poles, input))
+               depreciation(miles, units, cost, poles, input) +
+               input$electricity.per.hut * n_towns * input$avg.huts.per.town)
 }
 
 # The netop.opex is the cost of the Network Operator subcontract.
@@ -32,8 +33,7 @@ plant.opex <- function(miles, poles, units, subscribers, cost, input) {
 # THIS NEEDS WORK
 netop.opex <- function(n_towns, subscribers, input) {
   input$network.operator.base * n_towns + input$network.operator*subscribers + 
-    (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) +
-    input$electricity.per.hut * n_towns * input$avg.huts.per.town
+    (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) 
 }
 
 # The admin.opex are the costs for bookkeeping, etc., which Crocker
@@ -134,7 +134,7 @@ shinyServer(function(input, output, session) {
     per.town.data <-
       mutate(ts,
              n_towns=1,
-             plant.opex=plant.opex(miles, poles, units, subscribers, total_cost, input),
+             plant.opex=plant.opex(1, miles, poles, units, subscribers, total_cost, input),
              netop.opex=netop.opex(1,subscribers, input),
              admin.opex=admin.opex(1, input),
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
@@ -158,7 +158,7 @@ shinyServer(function(input, output, session) {
              total_cost=cumsum(total_cost),
              n_towns=1:nrow(per.town.data),
              subscribers=cumsum(subscribers),
-             plant.opex=plant.opex(miles, poles, units, subscribers, total_cost, input),
+             plant.opex=plant.opex(n_towns, miles, poles, units, subscribers, total_cost, input),
              netop.opex=netop.opex(n_towns, subscribers, input),
              admin.opex=admin.opex(n_towns, input),
              contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
