@@ -92,7 +92,6 @@ shinyUI(fluidPage(
                            sliderInput("years", "Years of Finance", min=10, max=30, step=1, value=20)
                   )
       ),
-      hr(),h4("Items marked in",span("orange",style=debatable), "represent currently unresolved issues or possible regional savings. Further information can be found in the 'Discussion' tab."),
       hr(),h4('Please send feedback to ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!')
       
     ),
@@ -139,8 +138,8 @@ shinyUI(fluidPage(
                   tabPanel("Standalone Opex", DT::dataTableOutput("town.costs"),
                            h3("Explanation"),
                            p("Per unit costs in the 'Opex Parameters' panel are initially based on Leverett. Plant Opex is computed as the sum of insurance, pole fees, pole bond, routine maintenance, and electricity. Insurance is currently crudely computed on a per mile basis; insurance would likely be lower if purchased over a large number of towns. Routine maintenance is estimated as a function of the number of drops."),
-                           p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, either as a scaled depreciation based on Leverett or as 3% of the total capital cost without make ready. See the 'Discussion' tab."),
-                           p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's estimate of an integrated NO/ISP. See the 'Discussion' tab for more information."),
+                           p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, either as a scaled depreciation based on Leverett or as 3% of the total capital cost without make ready. Depreciation does not distinguish electronics from plant."),
+                           p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's estimate of an integrated NO/ISP. This also incorporates an upstream bandwidth cost based on Leverett's agreements, although this cost may well be incorporated into ISP service. In the regional computation, it is assumed that backhaul is shared across multiple towns."),
                            p("Admin costs are detailed in the 'Opex Parameters' panel.")),
                   tabPanel("Cumulative Regional Opex", DT::dataTableOutput("regional.costs"),
                            h3("Explanation"),
@@ -150,10 +149,8 @@ shinyUI(fluidPage(
                            h1("Unresolved model parameters and areas for regional savings"),
                            p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represents uncertainties that affect costs significantly. "),
                            h3("ISP Service Fee and Backhaul",style=debatable),
-                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since the model is based on Leverett."),
+                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since that is Leverett's agreement."),
                            p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is up to $10 per month."),
-                           h3("Backhaul sharing",style=debatable),
-                           p("When multiple towns are selected, then backhaul is assumed to be aggregated instead of requiring separate backhaul in each town. The difference in cost is relatively small, but can be significant. I could implement a parameter to choose per-town backhaul connections."),
                            h3("Depreciation Methods",style=debatable),
                            p("There are two depreciation methods here. The first is a scaled depreciation based on Leverett's road miles and unit counts. This is likely an over-estimate, but it does include separate depreciation for fiber and electronics."),
                            p("The other method is simpler and cheaper. The depreciation is computed as 3% annual set aside of the cost of the plant, which can be calculated by subtracting the make ready, which shouldn't need to be repeated, from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown. In any case, in order to manage affordability, it may be important to minimize the depreciation reserve. I note that the law indicates that the 3% rule is just a recommendation and it can be less."),
