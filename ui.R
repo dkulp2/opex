@@ -67,6 +67,7 @@ shinyUI(fluidPage(
                            numericInput("network.operator.base", "Base (per town)", 16800),   # per town(!)
                            numericInput("network.operator", "Per subscriber", 36),           # per subscriber
                            h3("Bandwidth"),
+                           selectInput("backhaul.connections", span("Backhaul Connections",style=debatable), c("Aggregated","Per Town")),
                            numericInput("units.per.gb","Subscribers per Gb/s Backhaul", 600),
                            numericInput("backhaul.gb.price", span("Backhaul Price Per Gb/s",style=debatable), 18000),
                            h3('Insurance (per mile)', style=debatable),
@@ -148,21 +149,23 @@ shinyUI(fluidPage(
                            p("Another area of possible savings is insurance, which probably does not scale linearly with road miles as is modeled here. At the default scale factor, annual insurance for 32 WiredWest towns would be almost $700,000, which is far higher than anticipated.")),
                   tabPanel("Discussion",
                            h1("Unresolved model parameters and areas for regional savings"),
-                           p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represents uncertainties that affect costs significantly. "),
+                           p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represent uncertainties that affect costs significantly. "),
                            h3("ISP Service Fee and Backhaul",style=debatable),
                            p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since the model is based on Leverett."),
-                           p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is up to $10 per month."),
-                           h3("Backhaul sharing",style=debatable),
-                           p("When multiple towns are selected, then backhaul is assumed to be aggregated instead of requiring separate backhaul in each town. The difference in cost is relatively small, but can be significant. I could implement a parameter to choose per-town backhaul connections."),
+                           p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is roughly +/-$5 per month."),
+                           h3("Backhaul connections",style=debatable),
+                           p("When multiple towns are selected, then backhaul is assumed to be provided as needed on a per town basis. A proposed alternative is to minimize the number of middle mile connections by aggregating backhaul for multiple towns. This solution would require an unknown cost for dark fiber leases, but the savings is typically only $1-2 per sub per month. This can be understood trivially by doubling backhaul costs, which typically adds about $3 to a subscriber's bill."),
                            h3("Depreciation Methods",style=debatable),
                            p("There are two depreciation methods here. The first is a scaled depreciation based on Leverett's road miles and unit counts. This is likely an over-estimate, but it does include separate depreciation for fiber and electronics."),
-                           p("The other method is simpler and cheaper. The depreciation is computed as 3% annual set aside of the cost of the plant, which can be calculated by subtracting the make ready, which shouldn't need to be repeated, from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown. In any case, in order to manage affordability, it may be important to minimize the depreciation reserve. I note that the law indicates that the 3% rule is just a recommendation and it can be less."),
+                           p("The other method is simpler and cheaper. The depreciation is computed as an annual set aside of 3% of the cost of the plant — the minimum suggested, not required, by MLP law — which can be calculated by subtracting the make ready from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown."),
                            h3("Network Operator",style=debatable),
                            p("Additional comparable network operator costs are needed. The NO represents a significant portion of the operating budget that could benefit from multiple towns working together. However, the current NO costs are based on an informal Crocker proposal document that budgets the network operator as a flat cost per town plus a cost per drop. There is no savings from multiple towns, although this seems like a prime opportunity for economies of scale."),
                            h3("Insurance",style=debatable),
                            p("Insurance is intuitively an area that is ripe for costs savings for a larger plant. No guidance from PURMA, yet."),
                            h3("Administration",style=debatable),
-                           p("Administration costs are only about 7% of the total expenses. However, there are opportunities for costs savings and efficiencies here.")
+                           p("Administration costs are only about 7% of the total expenses. However, there are opportunities for costs savings and efficiencies here."),
+                           h2("Potential Regional Savings"),
+                           p("A general question of particular interest is whether there are large savings to be had in group purchasing of insurance, network operator, backhaul aggregation and administration. A simple way to assess this is by halving all of the parameters associated with these costs, which can be reasonably assumed to be the maximum possible savings from regionalization. Under most scenarios, the overall difference in monthly subscriber cost is only about $5, so shared savings through presumed economies of scale are probably relatively small under any scenario.")
                            )
       )
     )

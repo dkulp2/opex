@@ -32,8 +32,15 @@ plant.opex <- function(n_towns, miles, poles, units, input) {
 # Crocker estimates a base cost per town and a cost per subscriber.
 # THIS NEEDS WORK
 netop.opex <- function(n_towns, subscribers, input) {
-  input$network.operator.base * n_towns + input$network.operator*subscribers + 
-    (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) 
+  if (input$backhaul.connections == 'Per Town' && any(n_towns>1)) {
+    # reconstruct non-cumulative town subscribers
+    per.town.subscribers <- subscribers - head(c(0,subscribers),length(subscribers))
+    backhaul.cost <- ceiling(per.town.subscribers/input$units.per.gb) * input$backhaul.gb.price
+    backhaul.cost <- cumsum(backhaul.cost)
+  } else {
+    backhaul.cost <- (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) 
+  }
+  input$network.operator.base * n_towns + input$network.operator*subscribers + backhaul.cost
 }
 
 # The admin.opex are the costs for bookkeeping, etc., which Crocker
