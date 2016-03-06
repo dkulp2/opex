@@ -1,5 +1,6 @@
 library(shiny)
 
+library(plyr)
 library(dplyr)
 library(ggplot2)
 library(scales)
@@ -20,11 +21,10 @@ depreciation <- function(miles, units, cost, poles, input) {
 # The plant.opex are fixed costs.
 # I assume these costs are linear in the counts (miles, poles, etc.)
 # That is, no economy of scale as increase size
-plant.opex <- function(n_towns, miles, poles, units, subscribers, cost, input) {
+plant.opex <- function(n_towns, miles, poles, units, input) {
   as.integer(input$insurance*miles +
                (input$bond.fees+input$pole.rental)*poles +
                input$routine.mtnce*units*input$install.percent/100 +
-               depreciation(miles, units, cost, poles, input) +
                input$electricity.per.hut * n_towns * input$avg.huts.per.town)
 }
 
@@ -57,16 +57,84 @@ debt.svc <- function(principal, years, interest.rate) {
   return( years * (principal*interest.rate) / (1-(1+interest.rate)^(-years)) )
 }
 
-subscribers.fnc <- function(units, vacancy, seasonal, input) {
+subscribers.fnc <- function(units, vacancy, seasonal, input, take.rate) {
   # as.integer(((1-input$seasonal.pct/100)*units + input$seasonal.pct/100*units*input$seasonal.month/12) *input$take.rate/100)
   non.vacant <- (1-vacancy)*units
-  as.integer(((1-seasonal)*non.vacant + input$seasonal.month/12*seasonal*non.vacant)*input$take.rate/100)
+  as.integer(((1-seasonal)*non.vacant + input$seasonal.month/12*seasonal*non.vacant)*take.rate/100)
+}
+
+# given a set of town data in ts and user inputs, compute the opex for each town individually and regionally.
+town.region.costs <- function(ts, input) {
+  per.town.data <-
+    mutate(ts,
+           n_towns=1,
+           plant.opex=plant.opex(1, miles, poles, units, input),
+           netop.opex=netop.opex(1,subscribers, input),
+           admin.opex=admin.opex(1, input),
+           depreciation=as.integer(depreciation(miles, units, total_cost, poles, input)),
+           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
+           total.opex=plant.opex+netop.opex+admin.opex+contingency+depreciation,
+           revenue=input$mlp.fee*subscribers*12,
+           net.income=revenue-total.opex,
+           opex.per.sub.per.mo=round(total.opex/subscribers/12,2),
+           net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
+  
+  # For computing cumulative results and plotting purposes, reorder town names by net income
+  per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$net.per.sub.per.mo)])
+  per.town.data <- arrange(per.town.data, desc(town))
+  per.town.data$cum.total.opex <- cumsum(per.town.data$total.opex)
+  
+  # Now generate cumulative values in order of most affordable first
+  cum.town.data <-
+    mutate(per.town.data, 
+           miles=cumsum(miles), 
+           poles=cumsum(poles), 
+           units=cumsum(units),
+           total_cost=cumsum(total_cost),
+           n_towns=1:nrow(per.town.data),
+           subscribers=cumsum(subscribers),
+           plant.opex=plant.opex(n_towns, miles, poles, units, input),
+           netop.opex=netop.opex(n_towns, subscribers, input),
+           admin.opex=admin.opex(n_towns, input),
+           depreciation=as.integer(depreciation(miles, units, total_cost, poles, input)),
+           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
+           total.opex=plant.opex+netop.opex+admin.opex+contingency+depreciation,
+           revenue=input$mlp.fee*subscribers*12,
+           net.income=revenue-total.opex,
+           opex.per.sub.per.mo=round(total.opex/subscribers/12,2),
+           net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
+  
+  # for debug purposes, cum.total.opex is the addition of the standalone cost of town i to the cumulative cost.
+  # By comparison, cum.town.data$total.opex is the cost with economies of scale, if any. Comparing these
+  # two values helps debug whether such economies are properly computed.
+  cum.town.data$cum.total.opex <- cum.town.data$total.opex
+  if (nrow(cum.town.data)>1) {
+    for (i in 2:nrow(cum.town.data)) {
+      cum.town.data$cum.total.opex[i] <- cum.town.data$total.opex[i-1] + per.town.data$total.opex[i]
+    }
+  }
+  
+  # combine the data.frames
+  costs <- cbind(rbind(per.town.data, cum.town.data), method=factor(rep(c('standalone','regional') , each=nrow(per.town.data))))
+  return(costs)
+}
+
+# compute subscribers and debt-related info per town
+update.town.data <- function(td, input, take.rate=input$take.rate) {
+  return(mutate(td,
+                subscribers=subscribers.fnc(units,vacancy, seasonal, input, take.rate),
+                debt=as.integer(debt.svc(capex, input$years, input$interest.rate/100)),
+                proptax.per.mo=round((debt * (1-input$debt.responsibility/100)) / input$years / total_assessed * avg_sf_home / 12, 2),
+                capex.fee.per.mo=round(debt*input$debt.responsibility/100 / input$years / subscribers / 12,2))
+  )  
 }
 
 # returns a JavaScript function for formatting a numeric field as money
 JSmoney <- function() {
   DT::JS('function(data, type, row, meta) { return type=="display"?"$" + data.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ","):data }')
 }
+
+#####################################################################################
 
 # units miles poles         town   capex avg_sf_home total_assessed
 # 1   357    26   785       Alford  830000      714950      271040108
@@ -113,82 +181,30 @@ shinyServer(function(input, output, session) {
     } else if (input$towngroups == 8) {
       updateSelectizeInput(session, "townnames", selected=c('Plainfield','Cummington','Goshen','Chesterfield','Worthington'))
     }
-})
+  })
   
+  # returns just the town data for the towns specified by user. Also computes subscriber, debt-related costs given the user parameters
   town.subset <- reactive({
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
-    ss <- mutate(ss,
-                 subscribers=subscribers.fnc(units,vacancy, seasonal, input),
-                 debt=as.integer(debt.svc(capex, input$years, input$interest.rate/100)),
-                 proptax.per.mo=round((debt * (1-input$debt.responsibility/100)) / input$years / total_assessed * avg_sf_home / 12, 2),
-                 capex.fee.per.mo=round(debt*input$debt.responsibility/100 / input$years / subscribers / 12,2))
+    ss <- update.town.data(ss, input)  # add subscriber and debt-related data using user-selected take.rate
     return(ss)
   })
-
+  
   
   town.derived <- reactive({
     # Compute costs, revenue, net income per town
     
-    ts <- town.subset()
+    td <- town.region.costs(town.subset(), input)
 
-    per.town.data <-
-      mutate(ts,
-             n_towns=1,
-             plant.opex=plant.opex(1, miles, poles, units, subscribers, total_cost, input),
-             netop.opex=netop.opex(1,subscribers, input),
-             admin.opex=admin.opex(1, input),
-             contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
-             total.opex=plant.opex+netop.opex+admin.opex+contingency,
-             revenue=input$mlp.fee*subscribers*12,
-             net.income=revenue-total.opex,
-             opex.per.sub.per.mo=round(total.opex/subscribers/12,2),
-             net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
-    
-    # For computing cumulative results and plotting purposes, reorder town names by net income
-    per.town.data$town <- factor(per.town.data$town, levels=per.town.data$town[order(per.town.data$net.per.sub.per.mo)])
-    per.town.data <- arrange(per.town.data, desc(town))
-    per.town.data$cum.total.opex <- cumsum(per.town.data$total.opex)
-    
-    # Now generate cumulative values in order of most affordable first
-    cum.town.data <-
-      mutate(per.town.data, 
-             miles=cumsum(miles), 
-             poles=cumsum(poles), 
-             units=cumsum(units),
-             total_cost=cumsum(total_cost),
-             n_towns=1:nrow(per.town.data),
-             subscribers=cumsum(subscribers),
-             plant.opex=plant.opex(n_towns, miles, poles, units, subscribers, total_cost, input),
-             netop.opex=netop.opex(n_towns, subscribers, input),
-             admin.opex=admin.opex(n_towns, input),
-             contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
-             total.opex=plant.opex+netop.opex+admin.opex+contingency,
-             revenue=input$mlp.fee*subscribers*12,
-             net.income=revenue-total.opex,
-             opex.per.sub.per.mo=round(total.opex/subscribers/12,2),
-             net.per.sub.per.mo=input$mlp.fee-opex.per.sub.per.mo)
+    # for debug purposes, keep a copy of all the core computed data and save a copy of input as a list instead of a reactive object.
+    # if (!file.exists("z.Rdata")) {
+    #   INP <- list()
+    #   for (i in names(input)) { INP[[i]] <- input[[i]] }
+    #   save(td, INP, file='z.Rdata')
+    # }
 
-    # for debug purposes, cum.total.opex is the addition of the standalone cost of town i to the cumulative cost.
-    # By comparison, cum.town.data$total.opex is the cost with economies of scale, if any. Comparing these
-    # two values helps debug whether such economies are properly computed.
-    cum.town.data$cum.total.opex <- cum.town.data$total.opex
-    if (nrow(cum.town.data)>1) {
-      for (i in 2:nrow(cum.town.data)) {
-        cum.town.data$cum.total.opex[i] <- cum.town.data$total.opex[i-1] + per.town.data$total.opex[i]
-      }
-    }
+    return(td)
     
-    # combine the data.frames
-    costs <- cbind(rbind(per.town.data, cum.town.data), method=factor(rep(c('standalone','regional') , each=nrow(per.town.data))))
-
-#     # for debug purposes, keep a copy of all the core computed data and save a copy of input as a list instead of a reactive object.
-#     if (!file.exists("z.Rdata")) {
-#       INP <- list()
-#       for (i in names(input)) { INP[[i]] <- input[[i]] }
-#       save(ts, INP, per.town.data, cum.town.data, costs, file='z.Rdata')
-#     }
-#     
-    return(costs)
   })  
   
   opt.mlp.fee <- reactive({
@@ -223,14 +239,14 @@ shinyServer(function(input, output, session) {
       x$town <- as.character(x$town)
       x <- arrange(x,town)
       z <- filter(x, method=='standalone')[,c('town','plant.opex','netop.opex','admin.opex',
-                                              'contingency','total.opex','opex.per.sub.per.mo')]
+                                              'contingency','depreciation','total.opex','opex.per.sub.per.mo')]
       return(z)
     }, 
     rownames=FALSE,
-    colnames=c('Town','Plant Opex','Network Operator','Admin Opex',
-               'Contingency','Total Opex',
+    colnames=c('Town','Plant','Network Oper','Admin',
+               'Contingency','Depreciation','Total Annual Opex',
                'Opex/Sub/Month'),
-    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:6, render=JSmoney())))
+    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:7, render=JSmoney())))
   )
   
   output$regional.costs <- DT::renderDataTable(
@@ -238,13 +254,13 @@ shinyServer(function(input, output, session) {
       x <- arrange(town.derived(),desc(town))
       x$town <- as.character(x$town)
       z <- filter(x, method=='regional')[,c('town','plant.opex','netop.opex','admin.opex',
-                                            'contingency','total.opex','opex.per.sub.per.mo')]
+                                            'contingency','depreciation','total.opex','opex.per.sub.per.mo')]
       return(z)
     }, 
     rownames=FALSE,
     colnames=c('Town','Plant Opex','Network Operator','Admin Opex',
-               'Contingency','Total Opex','Opex/Sub/Month'),
-    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:6, render=JSmoney())))
+               'Contingency','Depreciation','Total Opex','Opex/Sub/Month'),
+    options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:7, render=JSmoney())))
   )
   
   output$net.income.tbl <- renderTable({
@@ -253,7 +269,7 @@ shinyServer(function(input, output, session) {
     colnames(z2) <- c('name',paste(colnames(z2)[2:6],rep(c('reg','stnd'),each=5),sep='.'))
     return(z2)
   })
-
+  
   output$net.income <- renderPlot({
     #    ggplot(town.derived(), aes(x=town,y=net.income/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per Town") + ylab("$ / town")
     ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per User") + ylab("$ / subscriber / month")
@@ -268,31 +284,76 @@ shinyServer(function(input, output, session) {
     z<-arrange(town.derived(), method)
     ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + coord_flip() +
       ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") +  scale_y_continuous(breaks=pretty_breaks(10))  + scale_color_discrete(breaks=c('standalone','regional'),
-                                                                                                             labels=c("Standalone","Regional"))
+                                                                                                                                                               labels=c("Standalone","Regional"))
   })
-
+  
   output$subscriber.fees <- renderPlot({
-      # stacked plot of debt, mlp fee, service fees
-      z <- filter(town.derived(), method=='regional')
-      z$min.service <- as.numeric(input$service.fee)
-      mean.cost <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
-      cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
-      z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
-      z2$value <- as.numeric(z2$value)
-      z2$town <- as.character(z2$town)
-      z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
-      z2 <- arrange(z2, cost)
-      ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + geom_bar(stat='identity',position = "stack") + 
-        ggtitle("Monthly Subscriber Costs (Regional)") + ylab("$/month") + 
-        theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
-        geom_hline(aes(yintercept=mean.cost))+geom_text(aes(0,mean.cost,label = sprintf("$%.0f",mean.cost), vjust = 1, hjust=-1), size=10) +
-        scale_fill_discrete(name  ="Costs",
-                             breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
-                             labels=c("Debt Service Fee","MLP Fee","Internet Service"))
+    # stacked plot of debt, mlp fee, service fees
+    td <- town.derived()
+    regional.c <- tail(filter(td, method=='regional'),1)$opex.per.sub.per.mo
+    z <- filter(td, method=='standalone')
+    z$min.service <- as.numeric(input$service.fee)
+
+    mean.cost.per.town.1 <- mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo)
+    if (input$regional.standalone.display == 'Regional') {
+      # replace the cost for opex with the cost if shared across all towns
+      z$opex.per.sub.per.mo <- regional.c
+    }
+    # average cost per town
+    mean.cost.per.town <- mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo)
+
+    # average cost per subscriber
+    mean.cost.per.user <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
+    # cat(mean.cost.per.town.1, mean.cost.per.town, mean.cost.per.user,
+    #     weighted.mean(z$capex.fee.per.mo, z$subscribers),
+    #     as.numeric(input$service.fee)+regional.c+weighted.mean(z$capex.fee.per.mo,z$subscribers),
+    #     "\n")
+    
+    cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
+    z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
+    z2$value <- as.numeric(z2$value)
+    z2$town <- as.character(z2$town)
+    z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
+    z2 <- arrange(z2, cost)
+    ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + geom_bar(stat='identity',position = "stack") + 
+      ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + ylab("$/month") + 
+      theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
+      geom_hline(aes(yintercept=mean.cost.per.user))+geom_text(aes(0,mean.cost.per.user,label = sprintf("$%.0f",mean.cost.per.user), vjust = 1, hjust=-1), size=10) +
+      scale_fill_discrete(name  ="Costs",
+                          breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
+                          labels=c("Debt Service Fee","MLP Fee","Internet Service"))
+  })
+  
+  # This is moderately compute intensive because the mean.cost is computed over a range of take rates instead of just one
+  cost.vs.take.rate.plot.data <- reactive({
+    plot.data <-
+      ldply(seq(5,100,5),function(take.rate) { 
+        ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
+        ss <- update.town.data(ss, input, take.rate)
+        z <- town.region.costs(ss, input)
+        sa <- filter(z, method=='standalone')
+        rg <- filter(z, method=='regional')
+        mean.opex.per.sub.per.mo <- tail(rg,1)$opex.per.sub.per.mo  # single cost in regional for all
+        mean.capex.fee.per.mo <- weighted.mean(sa$capex.fee.per.mo, sa$subscribers)  # varies per town
+        return(c(take.rate=take.rate,
+                 'Internet Service'=as.integer(input$service.fee), 
+                 'MLP Fee'=mean.opex.per.sub.per.mo,
+                 'Debt Service Fee'=mean.capex.fee.per.mo))
+      })
+    print(plot.data)
+    plot.data <- melt(plot.data, id='take.rate', measure.vars=2:4, variable_name='Cost')
+    return(plot.data)
   })
   
   output$cost.vs.take.rate <- renderPlot({
-    
+    plot.data <- cost.vs.take.rate.plot.data()
+    current.cost <- sum(plot.data[plot.data$take.rate==input$take.rate,'value'])
+    if (input$take.rate >= 40) { take.rate.xlim <- xlim(35,105) } else { take.rate.xlim <- xlim(0,105)}
+    ggplot(plot.data, aes(x=take.rate, y=value, fill=Cost)) + geom_bar(stat='identity',position = "stack") +
+      geom_hline(aes(yintercept=current.cost))+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
+      geom_vline(aes(xintercept=input$take.rate)) + take.rate.xlim + xlab("Take Rate (%)") +
+      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate")
   })
 
 })
+  
