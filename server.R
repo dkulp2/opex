@@ -347,7 +347,6 @@ shinyServer(function(input, output, session) {
                  'MLP Fee'=mean.opex.per.sub.per.mo,
                  'Debt Service Fee'=mean.capex.fee.per.mo))
       })
-    print(plot.data)
     plot.data <- melt(plot.data, id='take.rate', measure.vars=2:4, variable_name='Cost')
     return(plot.data)
   })
@@ -357,9 +356,9 @@ shinyServer(function(input, output, session) {
     current.cost <- sum(plot.data[plot.data$take.rate==input$take.rate,'value'])
     if (input$take.rate >= 40) { take.rate.xlim <- xlim(35,105) } else { take.rate.xlim <- xlim(0,105)}
     ggplot(plot.data, aes(x=take.rate, y=value, fill=Cost)) + geom_bar(stat='identity',position = "stack") +
-      geom_hline(aes(yintercept=current.cost))+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
-      geom_vline(aes(xintercept=input$take.rate)) + take.rate.xlim + xlab("Take Rate (%)") +
-      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate")
+      geom_hline(aes(yintercept=current.cost), size=1.5)+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
+      geom_vline(aes(xintercept=input$take.rate), size=1.5) + xlab("Take Rate (%)") + ylab("Subscriber Cost Per Month ($)") +
+      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim
   })
 
 })
