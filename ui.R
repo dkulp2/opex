@@ -67,6 +67,7 @@ shinyUI(fluidPage(
                            numericInput("network.operator.base", "Base (per town)", 16800),   # per town(!)
                            numericInput("network.operator", "Per subscriber", 36),           # per subscriber
                            h3("Bandwidth"),
+                           selectInput("backhaul.connections", span("Backhaul Connections",style=debatable), c("Aggregated","Per Town")),
                            numericInput("units.per.gb","Subscribers per Gb/s Backhaul", 600),
                            numericInput("backhaul.gb.price", span("Backhaul Price Per Gb/s",style=debatable), 18000),
                            h3('Insurance (per mile)', style=debatable),
@@ -92,6 +93,7 @@ shinyUI(fluidPage(
                            sliderInput("years", "Years of Finance", min=10, max=30, step=1, value=20)
                   )
       ),
+      hr(),h4("Items marked in",span("orange",style=debatable), "represent currently unresolved issues or possible regional savings. Further information can be found in the 'Discussion' tab."),
       hr(),h4('Please send feedback to ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!')
       
     ),
@@ -138,8 +140,8 @@ shinyUI(fluidPage(
                   tabPanel("Standalone Opex", DT::dataTableOutput("town.costs"),
                            h3("Explanation"),
                            p("Per unit costs in the 'Opex Parameters' panel are initially based on Leverett. Plant Opex is computed as the sum of insurance, pole fees, pole bond, routine maintenance, and electricity. Insurance is currently crudely computed on a per mile basis; insurance would likely be lower if purchased over a large number of towns. Routine maintenance is estimated as a function of the number of drops."),
-                           p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, either as a scaled depreciation based on Leverett or as 3% of the total capital cost without make ready. Depreciation does not distinguish electronics from plant."),
-                           p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's estimate of an integrated NO/ISP. This also incorporates an upstream bandwidth cost based on Leverett's agreements, although this cost may well be incorporated into ISP service. In the regional computation, it is assumed that backhaul is shared across multiple towns."),
+                           p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, either as a scaled depreciation based on Leverett or as 3% of the total capital cost without make ready. See the 'Discussion' tab."),
+                           p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's estimate of an integrated NO/ISP. See the 'Discussion' tab for more information."),
                            p("Admin costs are detailed in the 'Opex Parameters' panel.")),
                   tabPanel("Cumulative Regional Opex", DT::dataTableOutput("regional.costs"),
                            h3("Explanation"),
@@ -147,19 +149,26 @@ shinyUI(fluidPage(
                            p("Another area of possible savings is insurance, which probably does not scale linearly with road miles as is modeled here. At the default scale factor, annual insurance for 32 WiredWest towns would be almost $700,000, which is far higher than anticipated.")),
                   tabPanel("Discussion",
                            h1("Unresolved model parameters and areas for regional savings"),
-                           p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represents uncertainties that affect costs significantly. "),
+                           p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represent uncertainties that affect costs significantly. "),
                            h3("ISP Service Fee and Backhaul",style=debatable),
-                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since that is Leverett's agreement."),
-                           p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is up to $10 per month."),
+                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since the model is based on Leverett."),
+                           p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is roughly +/-$5 per month."),
+                           h3("Backhaul connections",style=debatable),
+                           p("When multiple towns are selected, then backhaul is assumed to be provided as needed on a per town basis. A proposed alternative is to minimize the number of middle mile connections by aggregating backhaul for multiple towns. This solution would require an unknown cost for dark fiber leases, but the savings is typically only $1-2 per sub per month. This can be understood trivially by doubling backhaul costs, which typically adds about $3 to a subscriber's bill."),
                            h3("Depreciation Methods",style=debatable),
                            p("There are two depreciation methods here. The first is a scaled depreciation based on Leverett's road miles and unit counts. This is likely an over-estimate, but it does include separate depreciation for fiber and electronics."),
-                           p("The other method is simpler and cheaper. The depreciation is computed as 3% annual set aside of the cost of the plant, which can be calculated by subtracting the make ready, which shouldn't need to be repeated, from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown. In any case, in order to manage affordability, it may be important to minimize the depreciation reserve. I note that the law indicates that the 3% rule is just a recommendation and it can be less."),
+                           p("The other method is simpler and cheaper. The depreciation is computed as an annual set aside of 3% of the cost of the plant — the minimum suggested, not required, by MLP law — which can be calculated by subtracting the make ready from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown."),
                            h3("Network Operator",style=debatable),
                            p("Additional comparable network operator costs are needed. The NO represents a significant portion of the operating budget that could benefit from multiple towns working together. However, the current NO costs are based on an informal Crocker proposal document that budgets the network operator as a flat cost per town plus a cost per drop. There is no savings from multiple towns, although this seems like a prime opportunity for economies of scale."),
                            h3("Insurance",style=debatable),
                            p("Insurance is intuitively an area that is ripe for costs savings for a larger plant. No guidance from PURMA, yet."),
                            h3("Administration",style=debatable),
-                           p("Administration costs are only about 7% of the total expenses. However, there are opportunities for costs savings and efficiencies here.")
+                           p("Administration costs are only about 7% of the total expenses. However, there are opportunities for costs savings and efficiencies here."),
+                           h2("Potential Regional Savings"),
+                           p("A question of particular interest is what savings are available to subscribers when towns are part of a regional network. There are three kinds of savings: non-economic or intangible benefits, cost sharing, and economies of scale. For many of our towns, the administration and management of a telecommunications network is a new burden for town employees who are already over-committed. Sharing information, knowledge, and experience are common practice in our region. Sharing the required administrative work, perhaps by having it done by one or two trained people, is efficient and makes sense for many of our towns."),
+                           p("The second kind of savings is based on averaging costs over multiple towns. Operating a town network tends to be more expensive for the less populated towns. When small towns combine with larger towns, the subscribers in the smaller towns tend to realize substantial cost savings. From the perspective of the larger towns (and the bulk of the subscribers), the cost to subscribers may rise, but only marginally, because that extra cost is spread over many subscribers. (See the MLP Fee plot.)"),
+                           p("The third opportunity for savings is realized through economies of scale. Practically speaking, the main sources of such savings are probably in insurance, network operator, administration, and backhaul aggregation. Savings in each area may be modest, but the total could easily be $5 per subscriber per month. These savings accrue to all of the towns and help improve the sustainability of the network. For the larger towns these savings help offset any increases due to cost sharing."),
+                           p("In short, there are significant monetary savings for small towns; there are probably offsetting additional costs and potential additional savings for large towns. But there is an intangible advantage to all towns to team together to provide mutual support and improve the chance of a successful implementation. Overall, the towns benefit from a regional approach, even in a fully outsourced model.")
                            )
       )
     )

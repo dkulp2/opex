@@ -32,8 +32,15 @@ plant.opex <- function(n_towns, miles, poles, units, input) {
 # Crocker estimates a base cost per town and a cost per subscriber.
 # THIS NEEDS WORK
 netop.opex <- function(n_towns, subscribers, input) {
-  input$network.operator.base * n_towns + input$network.operator*subscribers + 
-    (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) 
+  if (input$backhaul.connections == 'Per Town' && any(n_towns>1)) {
+    # reconstruct non-cumulative town subscribers
+    per.town.subscribers <- subscribers - head(c(0,subscribers),length(subscribers))
+    backhaul.cost <- ceiling(per.town.subscribers/input$units.per.gb) * input$backhaul.gb.price
+    backhaul.cost <- cumsum(backhaul.cost)
+  } else {
+    backhaul.cost <- (ceiling(subscribers/input$units.per.gb) * input$backhaul.gb.price) 
+  }
+  input$network.operator.base * n_towns + input$network.operator*subscribers + backhaul.cost
 }
 
 # The admin.opex are the costs for bookkeeping, etc., which Crocker
@@ -340,7 +347,6 @@ shinyServer(function(input, output, session) {
                  'MLP Fee'=mean.opex.per.sub.per.mo,
                  'Debt Service Fee'=mean.capex.fee.per.mo))
       })
-    print(plot.data)
     plot.data <- melt(plot.data, id='take.rate', measure.vars=2:4, variable_name='Cost')
     return(plot.data)
   })
@@ -350,9 +356,9 @@ shinyServer(function(input, output, session) {
     current.cost <- sum(plot.data[plot.data$take.rate==input$take.rate,'value'])
     if (input$take.rate >= 40) { take.rate.xlim <- xlim(35,105) } else { take.rate.xlim <- xlim(0,105)}
     ggplot(plot.data, aes(x=take.rate, y=value, fill=Cost)) + geom_bar(stat='identity',position = "stack") +
-      geom_hline(aes(yintercept=current.cost))+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
-      geom_vline(aes(xintercept=input$take.rate)) + take.rate.xlim + xlab("Take Rate (%)") +
-      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate")
+      geom_hline(aes(yintercept=current.cost), size=1.5)+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
+      geom_vline(aes(xintercept=input$take.rate), size=1.5) + xlab("Take Rate (%)") + ylab("Subscriber Cost Per Month ($)") +
+      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim
   })
 
 })
