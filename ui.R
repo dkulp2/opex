@@ -94,7 +94,8 @@ shinyUI(fluidPage(
                   )
       ),
       hr(),h4("Items marked in",span("orange",style=debatable), "represent currently unresolved issues or possible regional savings. Further information can be found in the 'Discussion' tab."),
-      hr(),h4('Please send feedback to ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!')
+      hr(),h4('Please send feedback to ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!'),
+      h6("(",a('Source Code',href="https://github.com/dkulp2/opex"),")")
       
     ),
 
