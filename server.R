@@ -54,7 +54,7 @@ admin.opex <- function(n_towns, input) {
 # A contingency fund for paying deductibles or other issues 
 # is based on a percent of total opex.
 contingency <- function(tot.opex, input) {
-  tot.opex * input$return.pct
+  tot.opex * input$return.pct/100
 }
 
 
@@ -360,6 +360,25 @@ shinyServer(function(input, output, session) {
       geom_vline(aes(xintercept=input$take.rate), size=1.5) + xlab("Take Rate (%)") + ylab("Subscriber Cost Per Month ($)") +
       ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim
   })
+  
+  output$opex.pie <- reactive({
+    td <- town.derived()
+    regional.c <- tail(filter(td, method=='regional'),1)
+    
+    pie.data <- data.frame(name=c('Plant Opex','Network Operator','Admin Opex',
+                                  'Contingency','Depreciation'),
+                           cost=c(regional.c$plant.opex,regional.c$netop.opex,
+                                  regional.c$admin.opex,regional.c$contingency,
+                                  regional.c$depreciation))
+    
+    # Return the data and options
+    list(
+      data = googleDataTable(pie.data),
+      options = list(
+      )
+    )
+  })
+    
 
 })
   

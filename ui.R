@@ -1,4 +1,6 @@
 library(shiny)
+library(googleCharts)
+
 debatable = "color:orange"
 
 all.towns <- c('Alford', 'Ashfield', 'Becket', 'Blandford', 'Charlemont', 'Chesterfield', 
@@ -11,6 +13,14 @@ all.towns <- c('Alford', 'Ashfield', 'Becket', 'Blandford', 'Charlemont', 'Chest
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
+  googleChartsInit(),
+  tags$link(
+    href=paste0("http://fonts.googleapis.com/css?",
+                "family=Source+Sans+Pro:300,600,300italic"),
+    rel="stylesheet", type="text/css"),
+  tags$style(type="text/css",
+             "body {font-family: 'Source Sans Pro'}"
+  ),
   
   # Application title
   titlePanel("FTTH Outsourced Regional Costs"),
@@ -48,7 +58,33 @@ shinyUI(fluidPage(
                            sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE)
                   ),
                   tabPanel("Opex Parameters",
-                           numericInput("return.pct", "Contingency (% of opex)", .05),            # percent of opex (contingency fund)
+                           googlePieChart("opex.pie",
+                                          width="auto", height = "auto",
+                                          # Set the default options for this chart; they can be
+                                          # overridden in server.R on a per-update basis. See
+                                          # https://developers.google.com/chart/interactive/docs/gallery/bubblechart
+                                          # for option documentation.
+                                          options = list(
+                                            fontName = "Source Sans Pro",
+                                            fontSize = 13,
+                                            title = "Regional Opex",
+                                            # The default padding is a little too spaced out
+                                            chartArea = list(
+                                              top = 50, left = 75,
+                                              height = "400", width = "100%"
+                                            ),
+                                            # Set fonts
+                                            titleTextStyle = list(
+                                              fontSize = 16
+                                            ),
+                                            tooltip = list(
+                                              textStyle = list(
+                                                fontSize = 12
+                                              )
+                                            )
+                                          )
+                           ),
+                           numericInput("return.pct", "Contingency (% of opex)", 5),            # percent of opex (contingency fund)
                            h3('Depreciation'),
                            selectInput('depreciation_method',span('Method', style=debatable),
                                        choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
@@ -98,7 +134,7 @@ shinyUI(fluidPage(
       h6("(",a('Source Code',href="https://github.com/dkulp2/opex"),")")
       
     ),
-
+    
     # Show a plot of the generated distribution
     mainPanel(
       tabsetPanel(type="tabs",
@@ -144,7 +180,8 @@ shinyUI(fluidPage(
                            p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, either as a scaled depreciation based on Leverett or as 3% of the total capital cost without make ready. See the 'Discussion' tab."),
                            p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's estimate of an integrated NO/ISP. See the 'Discussion' tab for more information."),
                            p("Admin costs are detailed in the 'Opex Parameters' panel.")),
-                  tabPanel("Cumulative Regional Opex", DT::dataTableOutput("regional.costs"),
+                  tabPanel("Cumulative Regional Opex",
+                           DT::dataTableOutput("regional.costs"),
                            h3("Explanation"),
                            p("Regional costs are identical to standalone, but the total costs are computed cumulatively starting with the town with the highest return per subscriber. The only economy of scale is currently a minor administrative costs savings in which it is assumed, crudely, that administrative costs would be halved if shared among two or more towns. Admin represents less than 5% of costs, so is not significant. There is likely to be significant costs savings in a large, multi-town contract for network operator and ISP, but those costs are currently based on Crocker's integrated NO/ISP estimates per town. "),
                            p("Another area of possible savings is insurance, which probably does not scale linearly with road miles as is modeled here. At the default scale factor, annual insurance for 32 WiredWest towns would be almost $700,000, which is far higher than anticipated.")),
@@ -170,9 +207,8 @@ shinyUI(fluidPage(
                            p("The second kind of savings is based on averaging costs over multiple towns. Operating a town network tends to be more expensive for the less populated towns. When small towns combine with larger towns, the subscribers in the smaller towns tend to realize substantial cost savings. From the perspective of the larger towns (and the bulk of the subscribers), the cost to subscribers may rise, but only marginally, because that extra cost is spread over many subscribers. (See the MLP Fee plot.)"),
                            p("The third opportunity for savings is realized through economies of scale. Practically speaking, the main sources of such savings are probably in insurance, network operator, administration, and backhaul aggregation. Savings in each area may be modest, but the total could easily be $5 per subscriber per month. These savings accrue to all of the towns and help improve the sustainability of the network. For the larger towns these savings help offset any increases due to cost sharing."),
                            p("In short, there are significant monetary savings for small towns; there are probably offsetting additional costs and potential additional savings for large towns. But there is an intangible advantage to all towns to team together to provide mutual support and improve the chance of a successful implementation. Overall, the towns benefit from a regional approach, even in a fully outsourced model.")
-                           )
+                  )
       )
     )
   )
 ))
-
