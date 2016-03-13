@@ -70,8 +70,8 @@ shinyUI(fluidPage(
                                             title = "Regional Opex",
                                             # The default padding is a little too spaced out
                                             chartArea = list(
-                                              top = 50, left = 75,
-                                              height = "400", width = "100%"
+                                              top = 5, left = 5,
+                                              height = "100%", width = "100%"
                                             ),
                                             # Set fonts
                                             titleTextStyle = list(
@@ -84,7 +84,8 @@ shinyUI(fluidPage(
                                             )
                                           )
                            ),
-                           numericInput("return.pct", "Contingency (% of opex)", 5),            # percent of opex (contingency fund)
+                           h3('Contigency'),
+                           numericInput("return.pct", "Percent of opex", 5),            # percent of opex (contingency fund)
                            h3('Depreciation'),
                            selectInput('depreciation_method',span('Method', style=debatable),
                                        choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
@@ -117,7 +118,7 @@ shinyUI(fluidPage(
                            h3('Enclosures'),
                            numericInput("electricity.per.hut", "Electricity Per Hut", 2500),
                            numericInput("avg.huts.per.town", "Average Huts Per Town", 1),
-                           h3('Administrative (per town)',style=debatable),
+                           h3('Administration (per town)',style=debatable),
                            numericInput("purma.dues", "PURMA Dues", 1200),               # per town
                            numericInput("accountant", "Accountant", 3000),               # per town
                            numericInput("bookkeeping.etc", "Bookkeeping, etc.", 5000),          # per town
