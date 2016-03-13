@@ -5,6 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(scales)
 library(reshape)
+library(googleCharts)
 
 # There are two depreciation strategies:
 # Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
