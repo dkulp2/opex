@@ -5,6 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(scales)
 library(reshape)
+library(googleCharts)
 
 # There are two depreciation strategies:
 # Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
@@ -54,7 +55,7 @@ admin.opex <- function(n_towns, input) {
 # A contingency fund for paying deductibles or other issues 
 # is based on a percent of total opex.
 contingency <- function(tot.opex, input) {
-  tot.opex * input$return.pct
+  tot.opex * input$return.pct/100
 }
 
 
@@ -265,7 +266,7 @@ shinyServer(function(input, output, session) {
       return(z)
     }, 
     rownames=FALSE,
-    colnames=c('Town','Plant Opex','Network Operator','Admin Opex',
+    colnames=c('Town','Plant','Network Operator','Administration',
                'Contingency','Depreciation','Total Opex','Opex/Sub/Month'),
     options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:7, render=JSmoney())))
   )
@@ -360,6 +361,25 @@ shinyServer(function(input, output, session) {
       geom_vline(aes(xintercept=input$take.rate), size=1.5) + xlab("Take Rate (%)") + ylab("Subscriber Cost Per Month ($)") +
       ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim
   })
+  
+  output$opex.pie <- reactive({
+    td <- town.derived()
+    regional.c <- tail(filter(td, method=='regional'),1)
+    
+    pie.data <- data.frame(name=c('Plant','Network Operator','Administration',
+                                  'Contingency','Depreciation'),
+                           cost=c(regional.c$plant.opex,regional.c$netop.opex,
+                                  regional.c$admin.opex,regional.c$contingency,
+                                  regional.c$depreciation))
+    
+    # Return the data and options
+    list(
+      data = googleDataTable(pie.data),
+      options = list(
+      )
+    )
+  })
+    
 
 })
   
