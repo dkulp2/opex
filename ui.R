@@ -1,7 +1,8 @@
 library(shiny)
 library(googleCharts)
 
-debatable = "color:orange"
+#debatable = "color:orange"
+debatable = ''
 
 all.towns <- c('Alford', 'Ashfield', 'Becket', 'Blandford', 'Charlemont', 'Chesterfield', 
                'Colrain', 'Cummington', 'Egremont', 'Florida', 'Goshen', 'Hancock', 'Hawley', 'Heath', 
@@ -84,56 +85,51 @@ shinyUI(fluidPage(
                                             )
                                           )
                            ),
-                           h3('Contigency'),
-                           numericInput("return.pct", "Percent of opex", 5),            # percent of opex (contingency fund)
-                           h3('Depreciation'),
-                           selectInput('depreciation_method',span('Method', style=debatable),
-                                       choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
-                                                 'Based on 3% of MBI Not-To-Exceed Minus Make Ready'='mbi'),
-                                       selected='mbi'),
-                           conditionalPanel(
-                             condition = "input.depreciation_method == 'scaled'",
-                             numericInput("fiber.plant.depreciation", "Fiber Plant Depreciation Per Mile", 1395), # per mile
-                             numericInput("electronics.depreciation", "Electronics Depreciation Per Unit", 63)   # per premise
-                           ),
-                           conditionalPanel(
-                             condition = "input.depreciation_method == 'mbi'",
-                             numericInput("make.ready", "Make Ready (per pole)", 470)
-                           ),
-                           h3('Network Operator', style=debatable),
-                           numericInput("network.operator.base", "Base (per town)", 16800),   # per town(!)
-                           numericInput("network.operator", "Per subscriber", 36),           # per subscriber
-                           h3("Bandwidth"),
-                           selectInput("backhaul.connections", span("Backhaul Connections",style=debatable), c("Aggregated","Per Town")),
-                           numericInput("units.per.gb","Subscribers per Gb/s Backhaul", 600),
-                           numericInput("backhaul.gb.price", span("Backhaul Price Per Gb/s",style=debatable), 18000),
-                           h3('Insurance (per mile)', style=debatable),
-                           numericInput("insurance", NULL, 442),                 # per mile
-                           h3('Utility Poles (per pole)'),
-                           numericInput("bond.fees", "Bond fees", 3),                   # per pole
-                           numericInput("pole.rental", "Pole Rental", 13),              # per pole
-                           h3('Routine Maintenance (per installed unit)'),
-                           numericInput("routine.mtnce", NULL, 39),     # per premise
-                           sliderInput("install.percent", "Percent of Premises With Drops", min=0, max=100, value=80, step=1, post='%'),
-                           h3('Enclosures'),
-                           numericInput("electricity.per.hut", "Electricity Per Hut", 2500),
-                           numericInput("avg.huts.per.town", "Average Huts Per Town", 1),
-                           h3('Administration (per town)',style=debatable),
-                           numericInput("purma.dues", "PURMA Dues", 1200),               # per town
-                           numericInput("accountant", "Accountant", 3000),               # per town
-                           numericInput("bookkeeping.etc", "Bookkeeping, etc.", 5000),          # per town
-                           numericInput("legal", "Legal", 10000)                  # per town
+                           hr(),
+                           tabsetPanel(type="tabs",position='right',
+                                       tabPanel("Plant", p(),
+                                                numericInput("insurance", 'Insurance (per mile)', 442),                 # per mile
+                                                numericInput("bond.fees", "Bond fees (per pole)", 3),                   # per pole
+                                                numericInput("pole.rental", "Rental (per pole)", 13),              # per pole
+                                                numericInput("routine.mtnce", 'Routine Maintenance (per installed unit)', 39),     # per premise
+                                                sliderInput("install.percent", "Percent of Premises With Drops", min=0, max=100, value=80, step=1, post='%'),
+                                                numericInput("electricity.per.hut", "Electricity (per enclosure)", 2500),
+                                                numericInput("avg.huts.per.town", "Average Huts Per Town", 1)),
+                                       tabPanel('Net Op', p(),
+                                                numericInput("network.operator.base", span("Base (per town)",style=debatable), 16800),   # per town(!)
+                                                numericInput("network.operator", span("Per subscriber",style=debatable), 36),           # per subscriber
+                                                selectInput("backhaul.connections", span("Backhaul Connections",style=debatable), c("Aggregated","Per Town")),
+                                                numericInput("units.per.gb","Subscribers per Gbps Backhaul", 600),
+                                                numericInput("backhaul.gb.price", span("Backhaul Price Per Gbps",style=debatable), 18000)),
+                                       tabPanel('Admin', p(),
+                                                numericInput("purma.dues", "PURMA Dues", 1200),               # per town
+                                                numericInput("accountant", "Accountant", 3000),               # per town
+                                                numericInput("bookkeeping.etc", "Bookkeeping, etc.", 5000),          # per town
+                                                numericInput("legal", "Legal", 10000)),                  # per town
+                                       tabPanel('Contigency', p(),
+                                                numericInput("return.pct", "Percent of opex", 5)),            # percent of opex (contingency fund)
+                                       tabPanel('Depreciation', p(),
+                                                selectInput('depreciation_method',span('Method', style=debatable),
+                                                            choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
+                                                                      'Based on 3% of MBI Not-To-Exceed Minus Make Ready'='mbi'),
+                                                            selected='mbi'),
+                                                conditionalPanel(
+                                                  condition = "input.depreciation_method == 'scaled'",
+                                                  numericInput("fiber.plant.depreciation", "Fiber Plant Depreciation Per Mile", 1395), # per mile
+                                                  numericInput("electronics.depreciation", "Electronics Depreciation Per Unit", 63)   # per premise
+                                                ),
+                                                conditionalPanel(
+                                                  condition = "input.depreciation_method == 'mbi'",
+                                                  numericInput("make.ready", "Make Ready (per pole)", 470)
+                                                ))
+                           )
                   ),
                   tabPanel("Financing",
                            # maybe a pull down indicating different service costs
                            sliderInput("interest.rate", "Interest Rate", min=3, max=6, step=0.5, post='%', value=4),
                            sliderInput("years", "Years of Finance", min=10, max=30, step=1, value=20)
                   )
-      ),
-      hr(),h4("Items marked in",span("orange",style=debatable), "represent currently unresolved issues or possible regional savings. Further information can be found in the 'Discussion' tab."),
-      hr(),h4('Please send feedback to ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!'),
-      h6("(",a('Source Code',href="https://github.com/dkulp2/opex"),")")
-      
+      )
     ),
     
     # Show a plot of the generated distribution
@@ -184,14 +180,13 @@ shinyUI(fluidPage(
                   tabPanel("Cumulative Regional Opex",
                            DT::dataTableOutput("regional.costs"),
                            h3("Explanation"),
-                           p("Regional costs are identical to standalone, but the total costs are computed cumulatively starting with the town with the highest return per subscriber. The only economy of scale is currently a minor administrative costs savings in which it is assumed, crudely, that administrative costs would be halved if shared among two or more towns. Admin represents less than 5% of costs, so is not significant. There is likely to be significant costs savings in a large, multi-town contract for network operator and ISP, but those costs are currently based on Crocker's integrated NO/ISP estimates per town. "),
+                           p("Regional costs are identical to standalone, but the total costs are computed cumulatively starting with the town with the highest return per subscriber. The only economies of scale are currently aggregated bandwidth (if selected in model) and a minor administrative costs savings in which it is assumed, crudely, that administrative costs would be halved if shared among two or more towns. Admin represents usually about 5% of costs, so is not significant. There is likely to be significant costs savings in a large, multi-town contract for network operator and ISP, but those costs are currently based on Crocker's integrated NO/ISP estimates per town. "),
                            p("Another area of possible savings is insurance, which probably does not scale linearly with road miles as is modeled here. At the default scale factor, annual insurance for 32 WiredWest towns would be almost $700,000, which is far higher than anticipated.")),
                   tabPanel("Discussion",
                            h1("Unresolved model parameters and areas for regional savings"),
-                           p("The following discussion identifies open issues corresponding with parameters marked in",span("orange.",style=debatable),"Several of these issues are areas for potential regional savings. Other issues should be resolved now because they represent uncertainties that affect costs significantly. "),
                            h3("ISP Service Fee and Backhaul",style=debatable),
-                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. This could go down in a competitive bid for more customers. In any case, I would like to include the cost of backhaul in the ISP cost, however currently the owner/operator pays for backhaul, since the model is based on Leverett."),
-                           p("I think that it makes more sense to include backhaul as part of the ISP because this allows the ISP to have almost full control of customer satisfaction and can choose the appropriate oversubscription rate. Moreover, backhaul demand increases with subscribers and the introduction of tiered service would seem to require the ISP to manage backhaul bandwidth. However, requiring the ISP to pay for backhaul may raise rates above those shown here. The impact is roughly +/-$5 per month."),
+                           p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. I would like to include the cost of backhaul in the ISP cost, however in the current model the owner/operator pays for backhaul as part of network operator expenses."),
+                           p("Including backhaul as part of the ISP better aligns the interests of the ISP and owner; it allows the ISP to have almost full control of customer satisfaction and the ISP can choose the appropriate oversubscription rate. Moreover, since backhaul demand increases with subscribers and is partially dependent on subscribed speeds (if tiered service is offered) then the ISP seems to be best positioned to manage backhaul bandwidth allocation. The net impact should be a wash with backhaul averaging about $5 per month as either an operator cost or a subsciber cost."),
                            h3("Backhaul connections",style=debatable),
                            p("When multiple towns are selected, then backhaul is assumed to be provided as needed on a per town basis. A proposed alternative is to minimize the number of middle mile connections by aggregating backhaul for multiple towns. This solution would require an unknown cost for dark fiber leases, but the savings is typically only $1-2 per sub per month. This can be understood trivially by doubling backhaul costs, which typically adds about $3 to a subscriber's bill."),
                            h3("Depreciation Methods",style=debatable),
@@ -202,12 +197,14 @@ shinyUI(fluidPage(
                            h3("Insurance",style=debatable),
                            p("Insurance is intuitively an area that is ripe for costs savings for a larger plant. No guidance from PURMA, yet."),
                            h3("Administration",style=debatable),
-                           p("Administration costs are only about 7% of the total expenses. However, there are opportunities for costs savings and efficiencies here."),
+                           p("Administration costs are a small fraction of the total expenses. However, there are opportunities for costs savings and efficiencies here."),
                            h2("Potential Regional Savings"),
                            p("A question of particular interest is what savings are available to subscribers when towns are part of a regional network. There are three kinds of savings: non-economic or intangible benefits, cost sharing, and economies of scale. For many of our towns, the administration and management of a telecommunications network is a new burden for town employees who are already over-committed. Sharing information, knowledge, and experience are common practice in our region. Sharing the required administrative work, perhaps by having it done by one or two trained people, is efficient and makes sense for many of our towns."),
                            p("The second kind of savings is based on averaging costs over multiple towns. Operating a town network tends to be more expensive for the less populated towns. When small towns combine with larger towns, the subscribers in the smaller towns tend to realize substantial cost savings. From the perspective of the larger towns (and the bulk of the subscribers), the cost to subscribers may rise, but only marginally, because that extra cost is spread over many subscribers. (See the MLP Fee plot.)"),
                            p("The third opportunity for savings is realized through economies of scale. Practically speaking, the main sources of such savings are probably in insurance, network operator, administration, and backhaul aggregation. Savings in each area may be modest, but the total could easily be $5 per subscriber per month. These savings accrue to all of the towns and help improve the sustainability of the network. For the larger towns these savings help offset any increases due to cost sharing."),
-                           p("In short, there are significant monetary savings for small towns; there are probably offsetting additional costs and potential additional savings for large towns. But there is an intangible advantage to all towns to team together to provide mutual support and improve the chance of a successful implementation. Overall, the towns benefit from a regional approach, even in a fully outsourced model.")
+                           p("In short, there are significant monetary savings for small towns; there are probably offsetting additional costs and potential additional savings for large towns. But there is an intangible advantage to all towns to team together to provide mutual support and improve the chance of a successful implementation. Overall, the towns benefit from a regional approach, even in a fully outsourced model."),
+                           hr(),h4('Feedback welcome. Email ',a('David Kulp.',href='mailto:dkulp@dizz.org'),' Thanks!'),
+                           h6("(",a('Source Code',href="https://github.com/dkulp2/opex"),")")
                   )
       )
     )
