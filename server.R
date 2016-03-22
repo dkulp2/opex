@@ -66,7 +66,6 @@ debt.svc <- function(principal, years, interest.rate) {
 }
 
 subscribers.fnc <- function(units, vacancy, seasonal, input, take.rate) {
-  # as.integer(((1-input$seasonal.pct/100)*units + input$seasonal.pct/100*units*input$seasonal.month/12) *input$take.rate/100)
   non.vacant <- (1-vacancy)*units
   as.integer(((1-seasonal)*non.vacant + input$seasonal.month/12*seasonal*non.vacant)*take.rate/100)
 }
@@ -165,8 +164,9 @@ town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/(
 
 town.data <- arrange(town.data, desc(town))
 
-# Define server logic required to draw a histogram
 shinyServer(function(input, output, session) {
+
+  # sets the town selection based on the grouping (All, WiredWest, etc.)
   observe({
     if (input$towngroups == 1) {
       updateSelectizeInput(session, "townnames", selected=town.data$town)
@@ -215,6 +215,8 @@ shinyServer(function(input, output, session) {
     
   })  
   
+  # The optimum MLP fee is the MLP fee that is in the last row of the cumulative calculations,
+  # since the last row includes *all* selected towns.
   opt.mlp.fee <- reactive({
     z <- town.derived()
     mlp.fee <- z[z$method=='regional','opex.per.sub.per.mo']
@@ -224,7 +226,8 @@ shinyServer(function(input, output, session) {
   
   # See http://rstudio.github.io/DT/options.html for DT::renderDataTable options
   # there is supposed to be an export extension, but I cannot get it to work. http://rstudio.github.io/DT/extensions.html
-  
+
+  # Returns the table displayed as "Town Stats"
   output$basic.town.data <- DT::renderDataTable(
     { 
       x <- arrange(town.subset()[,c('town','units','vacancy','seasonal', 'subscribers','miles','poles',
@@ -241,6 +244,7 @@ shinyServer(function(input, output, session) {
     options=list(dom='t',paging=FALSE, columnDefs=list(list(targets=2:3,class="dt-right"),list(targets=7:12,render=JSmoney())))
   )
   
+  # Returns the table displayed as "Standalone" costs per town
   output$town.costs <- DT::renderDataTable(
     { 
       x <- town.derived()
@@ -256,7 +260,9 @@ shinyServer(function(input, output, session) {
                'Opex/Sub/Month'),
     options=list(dom='t',paging=FALSE,columnDefs=list(list(targets=1:7, render=JSmoney())))
   )
-  
+
+  # Returns the table displayed as "Regional" costs, i.e. displays the totals for a cumulative
+  # scenario in which the "region" corresponding to row N includes town in row 1 to N.
   output$regional.costs <- DT::renderDataTable(
     {
       x <- arrange(town.derived(),desc(town))
