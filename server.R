@@ -285,20 +285,19 @@ shinyServer(function(input, output, session) {
   })
   
   output$net.income <- renderPlot({
-    #    ggplot(town.derived(), aes(x=town,y=net.income/n_towns,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per Town") + ylab("$ / town")
     ggplot(town.derived(), aes(x=town,y=net.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position='dodge') + coord_flip() +   ggtitle("Net Income Per User") + ylab("$ / subscriber / month")
   })
   
-  # output$reqd.mlp.fee <- renderPlot({
-  #   z<-town.derived()
-  #   ggplot(z, aes(x=town,y=opex.per.sub.per.mo,fill=method)) + geom_bar(stat='identity',position = "dodge") + coord_flip() + ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") 
-  # })
-  
   output$reqd.mlp.fee <- renderPlot({
     z<-arrange(town.derived(), method)
-    ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + coord_flip() +
-      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") +  scale_y_continuous(breaks=pretty_breaks(10))  + scale_color_discrete(breaks=c('standalone','regional'),
-                                                                                                                                                               labels=c("Standalone","Regional"))
+    max.regional.mlp <- tail(filter(z,method=='regional'),1)$opex.per.sub.per.mo
+    cat(max.regional.mlp)
+    ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + 
+      geom_hline(aes(yintercept=max.regional.mlp)) +
+      coord_flip() +
+      ggtitle("Required Fee Per Subscriber to Cover Opex (MLP Fee)") + ylab("$/month") +  
+      scale_y_continuous(breaks=pretty_breaks(10))  + 
+      scale_color_discrete(breaks=c('standalone','regional'), labels=c("Standalone","Regional"))
   })
   
   output$subscriber.fees <- renderPlot({

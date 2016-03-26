@@ -76,7 +76,20 @@ docs <-
          div(
            p("Subscriber costs here are for minimal service. Costs are computed as the sum of a Debt Service Fee (if any), a minimum Internet Service Fee and an MLP Fee, representing the breakeven cost per subscriber to pay for sustaining the network asset. (See the 'Standalone Opex' panel for more information.)"),
            p("If 'Regional' is selected, then the MLP Fee is the same for all towns because opex is computed over the entire region and distributed uniformly to all subscribers. The horizontal line represents the average cost per subscriber."),
-           p("The MLP Fee plot (lower plot) shows how the opex increases gradually in a regional approach, while the standalone costs for individual towns can be very high. Each blue dot is the MLP Fee that that particularly town would pay on its own. Each orange dot corresponds to a break-even fee if that town ", strong("and all towns listed above it")," joined together. The point size corresponds to the total number of subscribers. Note that the highest cost towns are some of the least populated, but in aggregate the region can absorb those higher costs with minimal impact on the individual subscriber.")
+           p("The MLP Fee plot (lower plot) shows how the opex increases gradually in a regional
+             approach, while the standalone costs for individual towns can be very high. 
+             Each blue dot is the MLP Fee that that particularly town would pay on its own. 
+             Each red dot corresponds to a break-even fee if that town ", 
+             strong("and all towns listed above it"), 
+             " joined together. The point size 
+             corresponds to the total number of subscribers. Note that the highest cost towns
+             are some of the least populated, but in aggregate the region can absorb those 
+             higher costs with minimal impact on the individual subscriber.
+             The vertical line corresponds to the maximum MLP Fee if all displayed towns 
+             participated in a regional network and distributed costs. Those blue dots to the
+             left of the vertical black line are standalone costs that are less than the regional
+             cost; these towns 'subsidize' the regional network through slightly higher fees. 
+             Those blue dots to the right of the black line pay less than they would individually.")
          ),
        'Net Income' =
          div(
