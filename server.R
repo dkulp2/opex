@@ -72,6 +72,10 @@ subscribers.fnc <- function(units, vacancy, seasonal, input, take.rate) {
 
 # given a set of town data in ts and user inputs, compute the opex for each town individually and regionally.
 town.region.costs <- function(ts, input) {
+  if (nrow(ts) == 0) {
+    return(data.frame())
+  }
+
   per.town.data <-
     mutate(ts,
            n_towns=1,
@@ -290,8 +294,10 @@ shinyServer(function(input, output, session) {
   
   output$reqd.mlp.fee <- renderPlot({
     z<-arrange(town.derived(), method)
+    if (nrow(z) == 0) {
+      return(ggplot()+geom_blank())
+    }
     max.regional.mlp <- tail(filter(z,method=='regional'),1)$opex.per.sub.per.mo
-    cat(max.regional.mlp)
     ggplot(z, aes(x=town,y=opex.per.sub.per.mo,color=method)) + geom_point(aes(size=subscribers)) + 
       geom_hline(aes(yintercept=max.regional.mlp)) +
       coord_flip() +
@@ -303,6 +309,9 @@ shinyServer(function(input, output, session) {
   output$subscriber.fees <- renderPlot({
     # stacked plot of debt, mlp fee, service fees
     td <- town.derived()
+    if (nrow(td)==0) {
+      return(ggplot()+geom_blank())
+    }
     regional.c <- tail(filter(td, method=='regional'),1)$opex.per.sub.per.mo
     z <- filter(td, method=='standalone')
     z$min.service <- as.numeric(input$service.fee)
@@ -372,7 +381,7 @@ shinyServer(function(input, output, session) {
     regional.c <- tail(filter(td, method=='regional'),1)
     
     pie.data <- data.frame(name=c('Plant','Network Operator','Administration',
-                                  'Contingency','Depreciation'),
+                                  'Contingency','Depreciation Reserve'),
                            cost=c(regional.c$plant.opex,regional.c$netop.opex,
                                   regional.c$admin.opex,regional.c$contingency,
                                   regional.c$depreciation))

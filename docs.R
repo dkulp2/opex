@@ -54,14 +54,41 @@ docs <-
            p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. I would like to include the cost of backhaul in the ISP cost, however in the current model the owner/operator pays for backhaul as part of network operator expenses."),
            p("Including backhaul as part of the ISP better aligns the interests of the ISP and owner; it allows the ISP to have almost full control of customer satisfaction and the ISP can choose the appropriate oversubscription rate. Moreover, since backhaul demand increases with subscribers and is partially dependent on subscribed speeds (if tiered service is offered) then the ISP seems to be best positioned to manage backhaul bandwidth allocation. The net impact should be a wash with backhaul averaging about $5 per month as either an operator cost or a subsciber cost."),
            h3("Backhaul connections",style=debatable),
-           p("When multiple towns are selected, then backhaul is assumed to be provided as needed on a per town basis. A proposed alternative is to minimize the number of middle mile connections by aggregating backhaul for multiple towns. This solution would require an unknown cost for dark fiber leases, but the savings is typically only $1-2 per sub per month. This can be understood trivially by doubling backhaul costs, which typically adds about $3 to a subscriber's bill."),
-           h3("Depreciation Methods",style=debatable),
-           p("There are two depreciation methods here. The first is a scaled depreciation based on Leverett's road miles and unit counts. This is likely an over-estimate, but it does include separate depreciation for fiber and electronics."),
-           p("The other method is simpler and cheaper. The depreciation is computed as an annual set aside of 3% of the cost of the plant — the minimum suggested, not required, by MLP law — which can be calculated by subtracting the make ready from the total capital cost. However, this approach does not include a shorter depreciation schedule for electronics because those costs are currently unknown."),
+           p("When multiple towns are selected, then the total required backhaul is summed
+and a single aggregate cost is computed, by default. This assumes that there is leased 
+dark fiber among the towns and a single aggregated backhaul point. The cost of the additional
+dark fiber is unknown and not included. There is also an option to compute the
+cost per town, i.e. each town has its own connection to the MB123. The savings in aggregating
+             backhaul is typically less than $3/sub/mo."),
+           p("This model does not currently include any economy of scale that could be realized
+             by purchasing a large amount of backhaul. Currently Axia does not have discounted
+             rates for larger amounts, but this may change in the future. The impact, though,
+             can be determined by trying different amounts for backhaul in the 'Net Op' parameters."),
+           h3("Depreciation Reserve Fund",style=debatable),
+           p("The cost to fund a required depreciation reserve (different from depreciation accounting) 
+             is a major operating expense, typically representing about 2/3 of costs, that is
+uniquely required by MLP law. There are two 
+             options here for computing the depreciation reserve. The first is a scaled depreciation 
+             based on Leverett's road miles and unit counts. This is likely an over-estimate and includes 
+             separate depreciation schedules for fiber and electronics, which are not required for the 
+             depreciation reserve fund."),
+           p("The other method is simpler and cheaper. The depreciation is computed as an annual set 
+             aside of 3% of the cost of the plant - the minimum suggested, not required, by MLP law - which
+             can be calculated by subtracting the make ready from the total capital cost. This is still 
+             probably an overestimate since much of the remaining capital cost is engineering, which need 
+             not be repeated when replacing aging plant equipment."),
+           p("Independent of the legally required depreciation reserve fund amount, 
+             there is the question of what is a prudent set aside. 
+             Fiber optic cable is designed to last 20-25 years, but typically lasts much longer under
+             normal conditions. There may be a desire in the future to upgrade electronics and possibly cable to handle newer optical
+             technology, but it is also reasonable to minimize outlay to ensure
+             affordability."),
            h3("Network Operator",style=debatable),
            p("Additional comparable network operator costs are needed. The NO represents a significant portion of the operating budget that could benefit from multiple towns working together. However, the current NO costs are based on an informal Crocker proposal document that budgets the network operator as a flat cost per town plus a cost per drop. There is no savings from multiple towns, although this seems like a prime opportunity for economies of scale."),
            h3("Insurance",style=debatable),
-           p("Insurance is intuitively an area that is ripe for costs savings for a larger plant. No guidance from PURMA, yet."),
+           p("Insurance is intuitively an area that is ripe for costs savings for a larger plant.
+             I'm looking for guidance from PURMA to improve this part, which in practice is not 
+             actually based on per-mile cost."),
            h3("Administration",style=debatable),
            p("Administration costs are a small fraction of the total expenses. However, there are opportunities for costs savings and efficiencies here."),
            h2("Potential Regional Savings"),
