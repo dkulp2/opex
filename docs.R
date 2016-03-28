@@ -66,7 +66,7 @@ cost per town, i.e. each town has its own connection to the MB123. The savings i
              can be determined by trying different amounts for backhaul in the 'Net Op' parameters."),
            h3("Depreciation Reserve Fund",style=debatable),
            p("The cost to fund a required depreciation reserve (different from depreciation accounting) 
-             is a major operating expense, typically representing about 2/3 of costs, that is
+             is a major operating expense - typically representing at least 1/3 of costs - that is
 uniquely required by MLP law. There are two 
              options here for computing the depreciation reserve. The first is a scaled depreciation 
              based on Leverett's road miles and unit counts. This is likely an over-estimate and includes 
