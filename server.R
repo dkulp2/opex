@@ -195,6 +195,19 @@ shinyServer(function(input, output, session) {
     }
   })
   
+
+  tier2.delta <- reactive({
+    # fee = (fee+a) * r_a + (fee+b) * r_b
+    # b = ((fee - (fee+a)*r_a)/r_b - fee)
+    mean.fee <- as.numeric(input$service.fee)
+    tier1.delta <- as.numeric(input$tier1delta)
+    tier1.takerate <- as.numeric(input$tier1takerate)/100
+    return( ( ( mean.fee - (mean.fee+tier1.delta)*tier1.takerate ) / (1-tier1.takerate) ) - mean.fee )
+  })
+  output$tier1price <- renderText(round(as.numeric(input$service.fee)+as.numeric(input$tier1delta),2))
+  output$tier2price <- renderText(round(as.numeric(input$service.fee)+tier2.delta(),2))
+
+    
   # returns just the town data for the towns specified by user. Also computes subscriber, debt-related costs given the user parameters
   town.subset <- reactive({
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
@@ -326,10 +339,6 @@ shinyServer(function(input, output, session) {
 
     # average cost per subscriber
     mean.cost.per.user <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
-    # cat(mean.cost.per.town.1, mean.cost.per.town, mean.cost.per.user,
-    #     weighted.mean(z$capex.fee.per.mo, z$subscribers),
-    #     as.numeric(input$service.fee)+regional.c+weighted.mean(z$capex.fee.per.mo,z$subscribers),
-    #     "\n")
     
     cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
     z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
@@ -337,13 +346,28 @@ shinyServer(function(input, output, session) {
     z2$town <- as.character(z2$town)
     z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
     z2 <- arrange(z2, cost)
-    ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + geom_bar(stat='identity',position = "stack") + 
-      ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + ylab("$/month") + 
+    
+    base.plot <- ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + 
+      geom_bar(stat='identity',position = "stack") + 
+      ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + 
+      ylab("$/month") + 
       theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
-      geom_hline(aes(yintercept=mean.cost.per.user))+geom_text(aes(0,mean.cost.per.user,label = sprintf("$%.0f",mean.cost.per.user), vjust = 1, hjust=-1), size=10) +
       scale_fill_discrete(name  ="Costs",
                           breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
                           labels=c("Debt Service Fee","MLP Fee","Internet Service"))
+    
+    if (input$tiers == 1) {
+      return(base.plot 
+             + geom_hline(aes(yintercept=mean.cost.per.user))+geom_text(aes(0,mean.cost.per.user,label = sprintf("$%.0f",mean.cost.per.user), vjust = 1, hjust=-1), size=10))  
+    } else {
+      tier1.price <- round(mean.cost.per.user + as.numeric(input$tier1delta),2)
+      tier2.price <- round(mean.cost.per.user + tier2.delta(),2)
+      return(base.plot 
+             + geom_hline(aes(yintercept=tier1.price), color='yellow', size=2)+geom_text(aes(0,tier1.price,label = sprintf("$%.0f",tier1.price), vjust = 1, hjust=-1), size=10)
+             + geom_hline(aes(yintercept=tier2.price), color='purple', size=2)+geom_text(aes(0,tier2.price,label = sprintf("$%.0f",tier2.price), vjust = 1, hjust=-1), size=10)
+             )
+    }
+        
   })
   
   # This is moderately compute intensive because the mean.cost is computed over a range of take rates instead of just one

@@ -101,8 +101,11 @@ uniquely required by MLP law. There are two
          ),
        'Subscriber Costs' =
          div(
-           p("Subscriber costs here are for minimal service. Costs are computed as the sum of a Debt Service Fee (if any), a minimum Internet Service Fee and an MLP Fee, representing the breakeven cost per subscriber to pay for sustaining the network asset. (See the 'Standalone Opex' panel for more information.)"),
-           p("If 'Regional' is selected, then the MLP Fee is the same for all towns because opex is computed over the entire region and distributed uniformly to all subscribers. The horizontal line represents the average cost per subscriber."),
+           p("Subscriber costs here are for minimal service under the 'Single Tier' model. Costs are computed as the sum of a Debt Service Fee (if any), a minimum Internet Service Fee
+             and an MLP Fee, representing the breakeven cost per subscriber to pay for sustaining the network asset. (See the 'Standalone Opex' panel for more information.)"),
+           p("If 'Regional' is selected, then the MLP Fee is the same for all towns because opex is computed over the entire region and distributed uniformly to all subscribers. The horizontal line represents the same shared cost per subscriber across the network."),
+           p("If 'Standalone' is selected, then the MLP Fee varies based on the cost per town. The horizontal line represents the average subscriber costs across different towns."),
+           p("If 'Two-tier' is selected, then the purple horizontal line corresponds to the necessary cost for the higher tiered service and the yellow line corresponds to the manually adjusted lower tier."),
            p("The MLP Fee plot (lower plot) shows how the opex increases gradually in a regional
              approach, while the standalone costs for individual towns can be very high. 
              Each blue dot is the MLP Fee that that particularly town would pay on its own. 
