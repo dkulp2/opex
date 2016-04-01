@@ -120,7 +120,7 @@ shinyUI(fluidPage(
                                                 numericInput("legal", "Legal", 10000)),                  # per town
                                        tabPanel('Contigency', p(),
                                                 numericInput("return.pct", "Percent of opex", 5)),            # percent of opex (contingency fund)
-                                       tabPanel('Depreciation', p(),
+                                       tabPanel('Depr Reserve', p(),
                                                 selectInput('depreciation_method',span('Method', style=debatable),
                                                             choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
                                                                       'Based on 3% of MBI Not-To-Exceed Minus Make Ready'='mbi'),
