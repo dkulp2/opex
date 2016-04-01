@@ -54,7 +54,20 @@ shinyUI(fluidPage(
                                             multiple = TRUE
                              )
                            ),
-                           selectInput("service.fee", span("Minimum Service Fee",style=debatable), c("Crocker 1000Mb/s at $25/mo"=25), selected=25),
+                           selectInput("service.fee", 
+                                       span("Mean Internet Service",style=debatable), 
+                                       c("$25 (Crocker offers 1Gb/s at $25)"=25, "$20"=20, "$30"=30), selected=25),
+                           
+                           selectInput("tiers","", c("Single Tier"=1,"Two Tier"=2), selected=1),
+                           
+                           # show only if custom 2-tier
+                           conditionalPanel(
+                             condition = "input.tiers == 2", 
+                             sliderInput("tier1delta", "Lower Tier Price Reduction", -50, 0, -10, step=1, round=TRUE, pre='$'),
+                             sliderInput('tier1takerate', 'Lower Tier Take Rate', min=5, max=95, step=5, post='%', value=80)
+                             # p('Tier 1: $', textOutput('tier1price',inline=TRUE)),
+                             # p('Tier 2: $', textOutput('tier2price',inline=TRUE))
+                           ),
                            sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE)
                   ),
                   tabPanel("Opex Parameters",
