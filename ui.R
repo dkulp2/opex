@@ -63,8 +63,8 @@ shinyUI(fluidPage(
                            # show only if custom 2-tier
                            conditionalPanel(
                              condition = "input.tiers == 2", 
-                             sliderInput("tier1delta", "Lower Tier Price Reduction", -50, 0, -10, step=1, round=TRUE, pre='$'),
-                             sliderInput('tier1takerate', 'Lower Tier Take Rate', min=5, max=95, step=5, post='%', value=80)
+                             sliderInput("tier1delta", "Lower Tier Price Reduction", -50, 0, -15, step=1, round=TRUE, pre='$'),
+                             sliderInput('tier1takerate', 'Lower Tier Take Rate', min=5, max=95, step=5, post='%', value=30)
                              # p('Tier 1: $', textOutput('tier1price',inline=TRUE)),
                              # p('Tier 2: $', textOutput('tier2price',inline=TRUE))
                            ),
