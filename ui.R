@@ -55,10 +55,10 @@ shinyUI(fluidPage(
                              )
                            ),
                            selectInput("service.fee", 
-                                       span("Mean Internet Service",style=debatable), 
+                                       span("Internet Service",style=debatable), 
                                        c("$25 (Crocker offers 1Gb/s at $25)"=25, "$20"=20, "$30"=30), selected=25),
                            
-                           selectInput("tiers","", c("Single Tier"=1,"Two Tier"=2), selected=1),
+                           selectInput("tiers","Tiers", c("Single Tier"=1,"Two Tier"=2), selected=1),
                            
                            # show only if custom 2-tier
                            conditionalPanel(
