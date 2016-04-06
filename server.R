@@ -6,6 +6,7 @@ library(ggplot2)
 library(scales)
 library(reshape)
 library(googleCharts)
+library(RColorBrewer)
 
 # There are two depreciation strategies:
 # Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
@@ -352,9 +353,10 @@ shinyServer(function(input, output, session) {
       ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + 
       ylab("$/month") + 
       theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
-      scale_fill_discrete(name  ="Costs",
-                          breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
-                          labels=c("Debt Service Fee","MLP Fee","Internet Service"))
+      scale_fill_brewer(name  ="Costs",
+                        breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
+                        labels=c("Debt Service Fee","MLP Fee","Internet Service"),
+                        palette = 'OrRd')
     
     if (input$tiers == 1) {
       return(base.plot 
@@ -397,7 +399,7 @@ shinyServer(function(input, output, session) {
     ggplot(plot.data, aes(x=take.rate, y=value, fill=Cost)) + geom_bar(stat='identity',position = "stack") +
       geom_hline(aes(yintercept=current.cost), size=1.5)+geom_text(aes(max(plot.data$take.rate),current.cost,label = sprintf("$%.0f",current.cost), vjust =-1, hjust=1), size=10) +
       geom_vline(aes(xintercept=input$take.rate), size=1.5) + xlab("Take Rate (%)") + ylab("Subscriber Cost Per Month ($)") +
-      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim
+      ggtitle("Monthly Subscriber Costs (Regional) vs Take Rate") + take.rate.xlim + scale_fill_brewer(palette = 'OrRd')
   })
   
   output$opex.pie <- reactive({
