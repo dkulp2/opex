@@ -42,6 +42,7 @@ shinyUI(fluidPage(
                                        "Northwest Hampshire" = 8,
                                        "Quabbin" = 5,
                                        "None" = 6,
+                                       "Ashfield" = 9,
                                        "Custom" = "custom"),
                              selected=3),
                            
@@ -56,7 +57,7 @@ shinyUI(fluidPage(
                            ),
                            selectInput("service.fee", 
                                        span("Internet Service",style=debatable), 
-                                       c("$25 (Crocker offers 1Gb/s at $25)"=25, "$20"=20, "$30"=30), selected=25),
+                                       c("$25 (Crocker offers 1Gb/s at $25)"=25, "$20"=20, "$30"=30,"$0"=0), selected=25),
                            
                            selectInput("tiers","Tiers", c("Single Tier"=1,"Two Tier"=2), selected=1),
                            

@@ -193,6 +193,8 @@ shinyServer(function(input, output, session) {
       updateSelectizeInput(session, "townnames", selected=c('Ashfield','Plainfield','Cummington','Goshen'))
     } else if (input$towngroups == 8) {
       updateSelectizeInput(session, "townnames", selected=c('Plainfield','Cummington','Goshen','Chesterfield','Worthington'))
+    } else if (input$towngroups == 9) {
+      updateSelectizeInput(session, "townnames", selected=c('Ashfield'))
     }
   })
   
