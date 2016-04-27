@@ -338,31 +338,39 @@ shinyServer(function(input, output, session) {
       z$opex.per.sub.per.mo <- regional.c
     }
     # average cost per town
-    mean.cost.per.town <- mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo)
+#    mean.cost.per.town <- mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo)
+    mean.cost.per.town <- mean(z$opex.per.sub.per.mo)
 
     # average cost per subscriber
-    mean.cost.per.user <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
+#    mean.cost.per.user <- weighted.mean(z$opex.per.sub.per.mo+z$min.service+z$capex.fee.per.mo, z$subscribers)
+    mean.cost.per.user <- weighted.mean(z$opex.per.sub.per.mo, z$subscribers)
     
-    cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
+#    cost.measures <- c('opex.per.sub.per.mo','min.service','capex.fee.per.mo')
+    cost.measures <- 'opex.per.sub.per.mo'
     z2 <- melt(z, id="town", measure.vars=cost.measures, variable_name='cost')
     z2$value <- as.numeric(z2$value)
     z2$town <- as.character(z2$town)
-    z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
+#    z2$cost <- factor(z2$cost, levels=c('min.service','opex.per.sub.per.mo','capex.fee.per.mo'))
+    z2$cost <- factor(z2$cost, levels=c('opex.per.sub.per.mo'))
     z2 <- arrange(z2, cost)
     
     base.plot <- ggplot(z2, aes(x=town,y=value,fill=cost,order=cost)) + 
       geom_bar(stat='identity',position = "stack") + 
-      ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + 
+#      ggtitle(sprintf("Monthly Subscriber Costs (%s)",input$regional.standalone.display)) + 
+      ggtitle("Monthly Subscriber Opex Costs") +
       ylab("$/month") + 
       theme(axis.text.x  = element_text(angle=45, vjust=1, hjust=1)) + 
-      scale_fill_brewer(name  ="Costs",
-                        breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
-                        labels=c("Debt Service Fee","MLP Fee","Internet Service"),
-                        palette = 'YlGnBu', direction = -1)
+      scale_fill_discrete(name  ="Costs",
+#                         breaks=c('capex.fee.per.mo','opex.per.sub.per.mo','min.service'),
+#                         labels=c("Debt Service Fee","MLP Fee","Internet Service"),
+                        breaks=c('opex.per.sub.per.mo'),
+                        labels=c("MLP Fee")) # ,
+#                        palette = 'YlGnBu', direction = -1)
     
     if (input$tiers == 1) {
       return(base.plot 
              + geom_hline(aes(yintercept=mean.cost.per.user))+geom_text(aes(0,mean.cost.per.user,label = sprintf("$%.0f",mean.cost.per.user), vjust = 1, hjust=-1), size=10))  
+#             + geom_hline(aes(yintercept=mean.cost.per.town))+geom_text(aes(0,mean.cost.per.town,label = sprintf("$%.0f",mean.cost.per.town), vjust = 0, hjust=-1), size=10))  
     } else {
       tier1.price <- round(mean.cost.per.user + as.numeric(input$tier1delta),2)
       tier2.price <- round(mean.cost.per.user + tier2.delta(),2)
