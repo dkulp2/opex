@@ -44,7 +44,7 @@ shinyUI(fluidPage(
                                        "None" = 6,
                                        "Ashfield" = 9,
                                        "Custom" = "custom"),
-                             selected=3),
+                             selected=1),
                            
                            # Only show this panel if Custom is selected
                            conditionalPanel(
