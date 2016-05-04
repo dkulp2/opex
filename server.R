@@ -55,8 +55,14 @@ admin.opex <- function(n_towns, input) {
 
 # A contingency fund for paying deductibles or other issues 
 # is based on a percent of total opex.
-contingency <- function(tot.opex, input) {
-  tot.opex * input$return.pct/100
+contingency <- function(tot.opex, n_towns, input) {
+  if (input$contingency_method == 'percentage') {
+    return(tot.opex * input$return.pct/100)
+  } else if (input$contingency_method == 'capped') {
+    return(pmin(input$return.max, input$return.amt*n_towns))
+  } else {
+    return(input$return.amt*n_towns)
+  }
 }
 
 
@@ -84,7 +90,7 @@ town.region.costs <- function(ts, input) {
            netop.opex=netop.opex(1,subscribers, input),
            admin.opex=admin.opex(1, input),
            depreciation=as.integer(depreciation(miles, units, total_cost, poles, input)),
-           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
+           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, 1, input)),
            total.opex=plant.opex+netop.opex+admin.opex+contingency+depreciation,
            revenue=input$mlp.fee*subscribers*12,
            net.income=revenue-total.opex,
@@ -109,7 +115,7 @@ town.region.costs <- function(ts, input) {
            netop.opex=netop.opex(n_towns, subscribers, input),
            admin.opex=admin.opex(n_towns, input),
            depreciation=as.integer(depreciation(miles, units, total_cost, poles, input)),
-           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, input)),
+           contingency=as.integer(contingency(plant.opex+netop.opex+admin.opex, n_towns, input)),
            total.opex=plant.opex+netop.opex+admin.opex+contingency+depreciation,
            revenue=input$mlp.fee*subscribers*12,
            net.income=revenue-total.opex,
@@ -159,14 +165,6 @@ JSmoney <- function() {
 town.data <- read.table('towndata.txt', header=T)
 rownames(town.data) <- town.data$town
 
-# Jim uses 2010 census. Towns also provided MBI with count of non-primary *premises* (not units). Most towns reported zero.
-# For those towns that reported non-zero, we don't know whether each non-primary premise corresponds to
-# one or more units, so I assume that all of the non-primary premises are single-unit.
-# If there is a non-zero MBI number, then I use that to compute the seasonal percentage. Otherwise,
-# I use Jim's census data, i.e. (seasonal / (premises - vacant))
-town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
-
-
 town.data <- arrange(town.data, desc(town))
 
 shinyServer(function(input, output, session) {
@@ -213,6 +211,17 @@ shinyServer(function(input, output, session) {
     
   # returns just the town data for the towns specified by user. Also computes subscriber, debt-related costs given the user parameters
   town.subset <- reactive({
+    town.data$units <- town.data[[paste0(input$data.source,'_Units')]]
+    town.data$miles <- town.data[[paste0(input$data.source,'_Miles')]]
+    town.data$poles <- town.data[[paste0(input$data.source,'_Poles')]]
+    
+    # Jim uses 2010 census. Towns also provided MBI with count of non-primary *premises* (not units). Most towns reported zero.
+    # For those towns that reported non-zero, we don't know whether each non-primary premise corresponds to
+    # one or more units, so I assume that all of the non-primary premises are single-unit.
+    # If there is a non-zero MBI number, then I use that to compute the seasonal percentage. Otherwise,
+    # I use Jim's census data, i.e. (seasonal / (premises - vacant))
+    town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
+    
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
     ss <- update.town.data(ss, input)  # add subscriber and debt-related data using user-selected take.rate
     return(ss)
@@ -378,8 +387,15 @@ shinyServer(function(input, output, session) {
   cost.vs.take.rate.plot.data <- reactive({
     plot.data <-
       ldply(seq(5,100,5),function(take.rate) { 
+        # BAD: this is duplicated code from town.subset. Maybe fix some day
+        town.data$units <- town.data[[paste0(input$data.source,'_Units')]]
+        town.data$miles <- town.data[[paste0(input$data.source,'_Miles')]]
+        town.data$poles <- town.data[[paste0(input$data.source,'_Poles')]]
+        town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
+        
         ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
         ss <- update.town.data(ss, input, take.rate)
+
         z <- town.region.costs(ss, input)
         sa <- filter(z, method=='standalone')
         rg <- filter(z, method=='regional')

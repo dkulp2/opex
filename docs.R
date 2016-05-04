@@ -49,7 +49,14 @@ docs <-
          ),
        'Discussion' =
          div(
-           h1("Unresolved model parameters and areas for regional savings"),
+           h1("Model parameters and areas for regional savings"),
+           h3("Contingency / Profit"),
+           p("Leverett budgets a contingency based on a percentage of operating expense. 
+MBI/WiPro published estimates requiring a $50,000/yr 'profit' per town, which I interpret as a contingency.
+Under a regional model one can argue that sharing costs should also imply sharing of contingency among towns. 
+After all, if 40 towns participated, then a total required profit of $2M per year seems excessively high,
+particularly considering that it acrues year after year. Thus, it seems reasonable to also have a regional 'cap'
+on profit. My default is a 5% contingency, but there are options to set a fixed profit and also a regional cap."),
            h3("ISP Service Fee and Backhaul",style=debatable),
            p("The model uses an ISP cost for minimum service based on Crocker's current offering in Leverett. I would like to include the cost of backhaul in the ISP cost, however in the current model the owner/operator pays for backhaul as part of network operator expenses."),
            p("Including backhaul as part of the ISP better aligns the interests of the ISP and owner; it allows the ISP to have almost full control of customer satisfaction and the ISP can choose the appropriate oversubscription rate. Moreover, since backhaul demand increases with subscribers and is partially dependent on subscribed speeds (if tiered service is offered) then the ISP seems to be best positioned to manage backhaul bandwidth allocation. The net impact should be a wash with backhaul averaging about $5 per month as either an operator cost or a subsciber cost."),

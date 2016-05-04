@@ -69,7 +69,8 @@ shinyUI(fluidPage(
                              # p('Tier 1: $', textOutput('tier1price',inline=TRUE)),
                              # p('Tier 2: $', textOutput('tier2price',inline=TRUE))
                            ),
-                           sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE)
+                           sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE),
+                           selectInput("data.source", "Source of Units, Miles, and Pole Count Data", c("Cartesian","MBI / Crocker"), selected='Crocker')
                   ),
                   tabPanel("Opex Parameters",
                            googlePieChart("opex.pie",
@@ -120,7 +121,24 @@ shinyUI(fluidPage(
                                                 numericInput("bookkeeping.etc", "Bookkeeping, etc.", 5000),          # per town
                                                 numericInput("legal", "Legal", 10000)),                  # per town
                                        tabPanel('Contigency', p(),
-                                                numericInput("return.pct", "Percent of opex", 5)),            # percent of opex (contingency fund)
+                                                selectInput('contingency_method', span('Method', style=debatable),
+                                                            choices=c('A percentage of opex'='percentage',
+                                                                      'A fixed "profit" per town'='fixed',
+                                                                      'A fixed "profit", capped at a maximum value'='capped'),
+                                                            selected='percentage'),
+                                                conditionalPanel(
+                                                  condition = "input.contingency_method == 'percentage'",
+                                                  sliderInput("return.pct", "Percent of opex", min=0, max=50, value=5, step=1, post='%')             # percent of opex (contingency fund)
+                                                ),
+                                                conditionalPanel(
+                                                  condition = "input.contingency_method != 'percentage'",
+                                                  sliderInput("return.amt", "Per Town Profit", min=0, max=100000, value=50000, step=10000, pre='$')             # $50k based on WiPro recommendation
+                                                ),
+                                                conditionalPanel(
+                                                  condition = "input.contingency_method == 'capped'",
+                                                  sliderInput("return.max", "Maximum Regional Profit", min=0, max=3000000, value=500000, step=100000, pre='$')            # $500,000 for a large region of 10 or more towns
+                                                )
+                                       ),
                                        tabPanel('Depr Reserve', p(),
                                                 selectInput('depreciation_method',span('Method', style=debatable),
                                                             choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
