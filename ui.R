@@ -70,7 +70,7 @@ shinyUI(fluidPage(
                              # p('Tier 2: $', textOutput('tier2price',inline=TRUE))
                            ),
                            sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE),
-                           selectInput("data.source", "Source of Units, Miles, and Pole Count Data", c("Cartesian","MBI / Crocker"), selected='Crocker')
+                           selectInput("data.source", "Source of Units, Miles, and Pole Count Data", c("Cartesian"='Cartesian',"MBI / Crocker"='Crocker'), selected='Crocker')
                   ),
                   tabPanel("Opex Parameters",
                            googlePieChart("opex.pie",
