@@ -10,8 +10,7 @@ docs <-
              likely be lower if purchased over a large number of towns. Routine maintenance is estimated
              as a function of the number of drops."),
            p("Depreciation is computed as one of two methods defined in the 'Finance' tab, namely, 
-             either as a scaled depreciation based on Leverett or as 3% of the total capital cost without 
-             make ready. See the 'Discussion' tab."),
+             either as a scaled depreciation based on Leverett or as 3% of the total capital cost. Make ready and electronics are optionally excluded. See the 'Discussion' tab."),
            p("Network operator is currently a flat per town cost plus a per drop cost from Crocker's 
              estimate of an integrated NO/ISP. See the 'Discussion' tab for more information."),
            p("Admin costs are detailed in the 'Opex Parameters' panel.")),
@@ -82,8 +81,14 @@ uniquely required by MLP law. There are two
            p("The other method is simpler and cheaper. The depreciation is computed as an annual set 
              aside of 3% of the cost of the plant - the minimum suggested, not required, by MLP law - which
              can be calculated by subtracting the make ready from the total capital cost. This is still 
-             probably an overestimate since much of the remaining capital cost is engineering, which need 
-             not be repeated when replacing aging plant equipment."),
+             probably an overestimate since much of the remaining capital cost is engineering, which may  
+             not to be repeated when replacing aging plant equipment. In addition, the model allows for
+             the exclusion of electronics. The capital cost of electronics is estimated very roughly at $1000
+per unit. This includes both the unit cost itself, plus installation and I assume core electronics. (This could use some work.) 
+The model assumes that an ISP partner owns all electronics,
+             which reduces depreciation reserves and borrowing. Third party ownership of electronics also
+             would reduce operating expense (maintenance, service contracts, etc.), but the cost would 
+             likely be compensated in ISP cost, so I don't attempt to model that change."),
            p("Independent of the legally required depreciation reserve fund amount, 
              there is the question of what is a prudent set aside. 
              Fiber optic cable is designed to last 20-25 years, but typically lasts much longer under

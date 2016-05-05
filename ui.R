@@ -14,13 +14,13 @@ all.towns <- c('Alford', 'Ashfield', 'Becket', 'Blandford', 'Charlemont', 'Chest
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   googleChartsInit(),
-  tags$link(
-    href=paste0("http://fonts.googleapis.com/css?",
-                "family=Source+Sans+Pro:300,600,300italic"),
-    rel="stylesheet", type="text/css"),
-  tags$style(type="text/css",
-             "body {font-family: 'Source Sans Pro'}"
-  ),
+  # tags$link(
+  #   href=paste0("http://fonts.googleapis.com/css?",
+  #               "family=Source+Sans+Pro:300,600,300italic"),
+  #   rel="stylesheet", type="text/css"),
+  # tags$style(type="text/css",
+  #            "body {font-family: 'Source Sans Pro'}"
+  #),
   
   # Application title
   titlePanel("FTTH Outsourced Regional Costs"),
@@ -142,7 +142,7 @@ shinyUI(fluidPage(
                                        tabPanel('Depr Reserve', p(),
                                                 selectInput('depreciation_method',span('Method', style=debatable),
                                                             choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
-                                                                      'Based on 3% of MBI Not-To-Exceed Minus Make Ready'='mbi'),
+                                                                      'Based on 3% of MBI'='mbi'),
                                                             selected='mbi'),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'scaled'",
@@ -151,7 +151,16 @@ shinyUI(fluidPage(
                                                 ),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'mbi'",
-                                                  numericInput("make.ready", "Make Ready (per pole)", 470)
+                                                  checkboxInput('exclude_makeready', 'Exclude Make Ready', value=TRUE),
+                                                  conditionalPanel(
+                                                    condition = 'input.exclude_makeready',
+                                                    numericInput("make.ready", "Make Ready (per pole)", 470)
+                                                  ),
+                                                  checkboxInput('exclude_electronics', 'Exclude Electronics (from both CapEx and Depreciation)', value=FALSE),
+                                                  conditionalPanel(
+                                                    condition = 'input.exclude_electronics',
+                                                    numericInput("electronics", "Electronics (per unit)", 1000)
+                                                  )
                                                 ))
                            )
                   ),
