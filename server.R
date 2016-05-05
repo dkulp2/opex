@@ -13,10 +13,18 @@ library(RColorBrewer)
 # MLP/MBI: use MBI's not to exceed number as the cost of the total plant and take 3%.
 # In the latter case, I don't separate plant and electronics
 depreciation <- function(miles, units, cost, poles, input) {
+  
   if (input$depreciation_method == 'mbi') {
-    return((cost - (poles * input$make.ready))*0.03)
+    depr.cost <- cost
+    if (input$exclude_makeready) {
+      depr.cost <- depr.cost - poles*input$make.ready
+    }
+    if (input$exclude_electronics) {
+      depr.cost <- depr.cost - input$install.percent/100*units*input$electronics
+    }
+    return(depr.cost*0.03)
   } else {
-    return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units)
+    return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units*input$install.percent/100)
   }
 }
 
@@ -137,9 +145,24 @@ town.region.costs <- function(ts, input) {
   return(costs)
 }
 
-# compute subscribers and debt-related info per town
+# set units, miles, and poles based on data set selection
+# set seasonal based on units selected
+# compute subscribers and debt-related info per town based on take.rate selected
 update.town.data <- function(td, input, take.rate=input$take.rate) {
+  td$units <- td[[paste0(input$data.source,'_Units')]]
+  td$miles <- td[[paste0(input$data.source,'_Miles')]]
+  td$poles <- td[[paste0(input$data.source,'_Poles')]]
+  
+  # Jim uses 2010 census. Towns also provided MBI with count of non-primary *premises* (not units). Most towns reported zero.
+  # For those towns that reported non-zero, we don't know whether each non-primary premise corresponds to
+  # one or more units, so I assume that all of the non-primary premises are single-unit.
+  # If there is a non-zero MBI number, then I use that to compute the seasonal percentage. Otherwise,
+  # I use Jim's census data, i.e. (seasonal / (premises - vacant))
+  td$seasonal <- with(td, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
+  
   return(mutate(td,
+                electronics=ifelse(rep(input$exclude_electronics,nrow(td)),units*input$electronics*input$install.percent/100,0),
+                capex=capex-electronics,
                 subscribers=subscribers.fnc(units,vacancy, seasonal, input, take.rate),
                 debt=as.integer(debt.svc(capex, input$years, input$interest.rate/100)),
                 proptax.per.mo=round((debt * (1-input$debt.responsibility/100)) / input$years / total_assessed * avg_sf_home / 12, 2),
@@ -211,17 +234,6 @@ shinyServer(function(input, output, session) {
     
   # returns just the town data for the towns specified by user. Also computes subscriber, debt-related costs given the user parameters
   town.subset <- reactive({
-    town.data$units <- town.data[[paste0(input$data.source,'_Units')]]
-    town.data$miles <- town.data[[paste0(input$data.source,'_Miles')]]
-    town.data$poles <- town.data[[paste0(input$data.source,'_Poles')]]
-    
-    # Jim uses 2010 census. Towns also provided MBI with count of non-primary *premises* (not units). Most towns reported zero.
-    # For those towns that reported non-zero, we don't know whether each non-primary premise corresponds to
-    # one or more units, so I assume that all of the non-primary premises are single-unit.
-    # If there is a non-zero MBI number, then I use that to compute the seasonal percentage. Otherwise,
-    # I use Jim's census data, i.e. (seasonal / (premises - vacant))
-    town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
-    
     ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
     ss <- update.town.data(ss, input)  # add subscriber and debt-related data using user-selected take.rate
     return(ss)
@@ -268,8 +280,8 @@ shinyServer(function(input, output, session) {
       return(x)
     }, 
     rownames=FALSE, 
-    colnames=c('Town','Units','Vacancy Rate','Seasonal Rate','Subscribers','Miles','Poles','Avg Single Family',
-               'Total Assessed', 'Capex', 'Capex w/ Interest', 'Tax / Home / Month','Debt Service / Sub / Month'),
+    colnames=c('Town','Units','Vacancy Rate','Seasonal Rate','Subs','Miles','Poles','Avg Single Family',
+               'Total Assessed', 'Town Capex', 'Town Capex w/ Interest', 'Tax / Home / Month','Debt Service / Sub / Month'),
     options=list(dom='t',paging=FALSE, columnDefs=list(list(targets=2:3,class="dt-right"),list(targets=7:12,render=JSmoney())))
   )
   
@@ -387,12 +399,6 @@ shinyServer(function(input, output, session) {
   cost.vs.take.rate.plot.data <- reactive({
     plot.data <-
       ldply(seq(5,100,5),function(take.rate) { 
-        # BAD: this is duplicated code from town.subset. Maybe fix some day
-        town.data$units <- town.data[[paste0(input$data.source,'_Units')]]
-        town.data$miles <- town.data[[paste0(input$data.source,'_Miles')]]
-        town.data$poles <- town.data[[paste0(input$data.source,'_Poles')]]
-        town.data$seasonal <- with(town.data, ifelse(mbi_non_primary>0,mbi_non_primary/((1-vacancy)*units),census_seasonal))
-        
         ss <- filter(town.data, town %in% input$townnames) # use only user-selected towns
         ss <- update.town.data(ss, input, take.rate)
 
