@@ -83,7 +83,9 @@ uniquely required by MLP law. There are two
              can be calculated by subtracting the make ready from the total capital cost. This is still 
              probably an overestimate since much of the remaining capital cost is engineering, which may  
              not to be repeated when replacing aging plant equipment. In addition, the model allows for
-             the exclusion of electronics. This assumes that an ISP partner owns all electronics,
+             the exclusion of electronics. The capital cost of electronics is estimated very roughly at $1000
+per unit. This includes both the unit cost itself, plus installation and I assume core electronics. (This could use some work.) 
+The model assumes that an ISP partner owns all electronics,
              which reduces depreciation reserves and borrowing. Third party ownership of electronics also
              would reduce operating expense (maintenance, service contracts, etc.), but the cost would 
              likely be compensated in ISP cost, so I don't attempt to model that change."),

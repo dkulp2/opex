@@ -159,7 +159,7 @@ shinyUI(fluidPage(
                                                   checkboxInput('exclude_electronics', 'Exclude Electronics (from both CapEx and Depreciation)', value=FALSE),
                                                   conditionalPanel(
                                                     condition = 'input.exclude_electronics',
-                                                    numericInput("electronics", "Electronics (per unit)", 750)
+                                                    numericInput("electronics", "Electronics (per unit)", 1000)
                                                   )
                                                 ))
                            )
