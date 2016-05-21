@@ -23,6 +23,8 @@ depreciation <- function(miles, units, cost, poles, input) {
       depr.cost <- depr.cost - input$install.percent/100*units*input$electronics
     }
     return(depr.cost*0.03)
+  } else if (input$depreciation_method == 'none') {
+    return(0)
   } else {
     return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units*input$install.percent/100)
   }

@@ -142,7 +142,7 @@ shinyUI(fluidPage(
                                        tabPanel('Depr Reserve', p(),
                                                 selectInput('depreciation_method',span('Method', style=debatable),
                                                             choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
-                                                                      'Based on 3% of MBI'='mbi'),
+                                                                      'Based on 3% of MBI'='mbi','None (Towns budget separately)'='none'),
                                                             selected='mbi'),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'scaled'",
