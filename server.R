@@ -292,7 +292,6 @@ shinyServer(function(input, output, session) {
     {
       z <- town.derived()
       z$town <- as.character(z$town)
-      z <- arrange(z,town)
  
       sa <- filter(z, method=='standalone')
       rg <- filter(z, method=='regional')
@@ -303,12 +302,12 @@ shinyServer(function(input, output, session) {
       }
       capex.fee.per.mo <- sa$capex.fee.per.mo
       depr.resv.per.mo <- sa$depr.resv.per.mo
-      return(data.frame('Town'=sa$town,
-                        'Internet Service'=as.integer(input$service.fee), 
-                        'MLP Fee'=opex.per.sub.per.mo,
-                        'Depr Resv Fee'=depr.resv.per.mo,
-                        'Debt Service Fee'=capex.fee.per.mo,
-                        'Total Monthly Cost'=as.integer(input$service.fee)+opex.per.sub.per.mo+depr.resv.per.mo+capex.fee.per.mo))
+      data.frame('Town'=sa$town,
+                 'Internet Service'=as.integer(input$service.fee), 
+                 'MLP Fee'=opex.per.sub.per.mo,
+                 'Depr Resv Fee'=depr.resv.per.mo,
+                 'Debt Service Fee'=capex.fee.per.mo,
+                 'Total Monthly Cost'=as.integer(input$service.fee)+opex.per.sub.per.mo+depr.resv.per.mo+capex.fee.per.mo)
     },
     rownames=FALSE,
     colnames=c('Town','Internet Service','MLP Fee','Depreciation Reserve Fee','Debt Service Fee','Total Monthly Cost Per Subscriber'),
@@ -464,7 +463,7 @@ shinyServer(function(input, output, session) {
     regional.c <- tail(filter(td, method=='regional'),1)
     
     pie.data <- data.frame(name=c('Plant','Network Operator','Administration',
-                                  'Contingency','Depreciation Reserve'),
+                                  'Contingency'),
                            cost=c(regional.c$plant.opex,regional.c$netop.opex,
                                   regional.c$admin.opex,regional.c$contingency))
     
