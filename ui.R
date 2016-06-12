@@ -179,6 +179,7 @@ shinyUI(fluidPage(
                            selectInput("regional.standalone.display", "", c('Regional','Standalone')),
                            plotOutput('subscriber.fees'),
                            plotOutput('reqd.mlp.fee'),
+                           DT::dataTableOutput("town.costs2"),
                            h3("Explanation"),
                            docs['Subscriber Costs']
                   ),
@@ -191,7 +192,7 @@ shinyUI(fluidPage(
                                          max = 100,
                                          step = 0.5,
                                          pre = "$",
-                                         value = 45),
+                                         value = 25),
                              p('Regional break-even MLP Fee: $', textOutput('opt.mlp.fee',inline=TRUE)),
                              plotOutput("net.income"),
                              h3('Explanation'),
