@@ -142,7 +142,9 @@ shinyUI(fluidPage(
                                        tabPanel('Depr Reserve', p(),
                                                 selectInput('depreciation_method',span('Method', style=debatable),
                                                             choices=c('Scaled Leverett by Road Miles and Unit Count'='scaled',
-                                                                      'Based on 3% of MBI'='mbi','None (Towns budget separately)'='none'),
+                                                                      'Based on 3% of MBI'='mbi',
+                                                                      '80%/20% Plant Electronics (MBI approach)'='schedule',
+                                                                      'None (Towns budget separately)'='none'),
                                                             selected='mbi'),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'scaled'",
@@ -150,12 +152,18 @@ shinyUI(fluidPage(
                                                   numericInput("electronics.depreciation", "Electronics Depreciation Per Unit", 63)   # per premise
                                                 ),
                                                 conditionalPanel(
-                                                  condition = "input.depreciation_method == 'mbi'",
+                                                  condition = "input.depreciation_method == 'schedule'",
+                                                ),
+                                                conditionalPanel(
+                                                  condition = "input.depreciation_method == 'mbi' || input.depreciation_method == 'schedule'",
                                                   checkboxInput('exclude_makeready', 'Exclude Make Ready', value=TRUE),
                                                   conditionalPanel(
                                                     condition = 'input.exclude_makeready',
                                                     numericInput("make.ready", "Make Ready (per pole)", 470)
-                                                  ),
+                                                  )
+                                                ),
+                                                conditionalPanel(
+                                                  condition = "input.depreciation_method == 'mbi'",
                                                   checkboxInput('exclude_electronics', 'Exclude Electronics (from both CapEx and Depreciation)', value=FALSE),
                                                   conditionalPanel(
                                                     condition = 'input.exclude_electronics',

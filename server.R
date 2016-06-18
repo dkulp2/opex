@@ -22,12 +22,19 @@ depreciation <- function(miles, units, cost, poles, input) {
     if (input$exclude_electronics) {
       depr.cost <- depr.cost - input$install.percent/100*units*input$electronics
     }
-    return(depr.cost*0.03)
+    depr.cost <- depr.cost*0.03
   } else if (input$depreciation_method == 'none') {
-    return(0)
+    depr.cost <- 0
+  } else if (input$depreciation_method == 'schedule') {
+    depr.cost <- cost
+    if (input$exclude_makeready) {
+      depr.cost <- depr.cost - poles*input$make.ready
+    }
+    depr.cost <- (depr.cost * 0.2 / input$electronics.life) + (depr.cost * 0.8 / input$fiber.life)
   } else {
-    return(input$fiber.plant.depreciation*miles + input$electronics.depreciation*units*input$install.percent/100)
+    depr.cost <- input$fiber.plant.depreciation*miles + input$electronics.depreciation*units*input$install.percent/100
   }
+  return(depr.cost)
 }
 
 # The plant.opex are fixed costs.
