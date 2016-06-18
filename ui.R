@@ -1,5 +1,7 @@
 library(shiny)
 library(googleCharts)
+library("shinyURL")
+
 
 source('docs.R')
 
@@ -70,7 +72,8 @@ shinyUI(fluidPage(
                              # p('Tier 2: $', textOutput('tier2price',inline=TRUE))
                            ),
                            sliderInput("seasonal.month", "Number of Seasonal Months", 1, 12, 7, step=1, round=TRUE),
-                           selectInput("data.source", "Source of Units, Miles, and Pole Count Data", c("Cartesian"='Cartesian',"MBI / Crocker"='Crocker'), selected='Crocker')
+                           selectInput("data.source", "Source of Units, Miles, and Pole Count Data", c("Cartesian"='Cartesian',"MBI / Crocker"='Crocker'), selected='Crocker'),
+                           shinyURL.ui()
                   ),
                   tabPanel("Opex Parameters",
                            googlePieChart("opex.pie",
@@ -189,7 +192,7 @@ shinyUI(fluidPage(
                            selectInput("regional.standalone.display", "", c('Regional','Standalone')),
                            plotOutput('subscriber.fees'),
                            plotOutput('reqd.mlp.fee'),
-                           DT::dataTableOutput("town.costs2"),
+                           DT::dataTableOutput(".town.costs2"),
                            h3("Explanation"),
                            docs['Subscriber Costs']
                   ),
@@ -213,14 +216,14 @@ shinyUI(fluidPage(
                            h3('Explanation'),
                            docs['Cost vs Take Rate']
                   ),
-                  tabPanel("Town Stats", DT::dataTableOutput("basic.town.data"),
+                  tabPanel("Town Stats", DT::dataTableOutput(".basic.town.data"),
                            h3('Explanation'),
                            docs['Town Stats']),
-                  tabPanel("Standalone Opex", DT::dataTableOutput("town.costs"),
+                  tabPanel("Standalone Opex", DT::dataTableOutput(".town.costs"),
                            h3("Explanation"),
                            docs['Standalone Opex']),
                   tabPanel("Cumulative Regional Opex",
-                           DT::dataTableOutput("regional.costs"),
+                           DT::dataTableOutput(".regional.costs"),
                            h3("Explanation"),
                            docs['Regional Opex']),
                   tabPanel("Discussion",

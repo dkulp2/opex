@@ -7,6 +7,8 @@ library(scales)
 library(reshape)
 library(googleCharts)
 library(RColorBrewer)
+library("shinyURL")
+
 
 # There are two depreciation strategies:
 # Crocker/Leverett: scale the Leverett plant by road miles and Leverett electronics by units,
@@ -200,6 +202,8 @@ rownames(town.data) <- town.data$town
 town.data <- arrange(town.data, desc(town))
 
 shinyServer(function(input, output, session) {
+  
+  shinyURL.server(session)
 
   # sets the town selection based on the grouping (All, WiredWest, etc.)
   observe({
@@ -278,7 +282,7 @@ shinyServer(function(input, output, session) {
   # there is supposed to be an export extension, but I cannot get it to work. http://rstudio.github.io/DT/extensions.html
 
   # Returns the table displayed as "Town Stats"
-  output$basic.town.data <- DT::renderDataTable(
+  output$.basic.town.data <- DT::renderDataTable(
     { 
       x <- arrange(town.subset()[,c('town','units','vacancy','seasonal', 'subscribers','miles','poles',
                                     'avg_sf_home','total_assessed',
@@ -295,7 +299,7 @@ shinyServer(function(input, output, session) {
   )
   
   # Returns the breakdown of costs per town in the 4 categories
-  output$town.costs2 <- DT::renderDataTable(
+  output$.town.costs2 <- DT::renderDataTable(
     {
       z <- town.derived()
       z$town <- as.character(z$town)
@@ -323,7 +327,7 @@ shinyServer(function(input, output, session) {
   )
   
   # Returns the table displayed as "Standalone" costs per town
-  output$town.costs <- DT::renderDataTable(
+  output$.town.costs <- DT::renderDataTable(
     { 
       x <- town.derived()
       x$town <- as.character(x$town)
@@ -341,7 +345,7 @@ shinyServer(function(input, output, session) {
 
   # Returns the table displayed as "Regional" costs, i.e. displays the totals for a cumulative
   # scenario in which the "region" corresponding to row N includes town in row 1 to N.
-  output$regional.costs <- DT::renderDataTable(
+  output$.regional.costs <- DT::renderDataTable(
     {
       x <- arrange(town.derived(),desc(town))
       x$town <- as.character(x$town)
