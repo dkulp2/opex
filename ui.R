@@ -153,6 +153,8 @@ shinyUI(fluidPage(
                                                 ),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'schedule'",
+                                                  sliderInput("electronics.life","Electronics Depreciation Life (years)", min=7, max=30, value=7),
+                                                  sliderInput("fiber.life","Fiber Depreciation Life (years)", min=15, max=40, value=20)
                                                 ),
                                                 conditionalPanel(
                                                   condition = "input.depreciation_method == 'mbi' || input.depreciation_method == 'schedule'",
